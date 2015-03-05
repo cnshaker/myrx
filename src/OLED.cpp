@@ -5,15 +5,16 @@
 
 void OLED::SetPos(unsigned char x, unsigned char y)
 {
-	AutoChipSelect(this);
+	ChipSelect_Begin;
 	WC(0xb0 + y);
-	WC(((x & 0xf0) >> 4) | 0x10);
-	WC((x & 0x0f) | 0x01);
+	WC(((x&0xf0)>>4)|0x10);
+	WC((x&0x0f)|0x01);
+	ChipSelect_End;
 }
 
 void OLED::Fill(unsigned char bmp_dat)
 {
-	AutoChipSelect(this);
+	ChipSelect_Begin;
 	unsigned char y, x;
 	for (y = 0; y < 8; y++)
 	{
@@ -25,6 +26,7 @@ void OLED::Fill(unsigned char bmp_dat)
 			WD(bmp_dat);
 		}
 	}
+	ChipSelect_End;
 }
 
 void OLED::Init()
@@ -35,12 +37,13 @@ void OLED::Init()
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(gpiox, &GPIO_InitStructure);
 	GPIO_SetBits(gpiox, dc_pin);
-	GPIO_ResetBits(gpiox, cs_pin);
+	GPIO_SetBits(gpiox, cs_pin);
 
 	DelayMs(1500);
 
 	{
-		//AutoChipSelect(this);
+		//GPIO_ResetBits(gpiox, cs_pin);
+		ChipSelect_Begin;
 		WC(0xae);
 		WC(0xae); //--turn off oled panel
 		WC(0x00); //---set low column address
@@ -72,11 +75,13 @@ void OLED::Init()
 		WC(0xaf); //--turn on oled panel
 		Fill(0x00);
 		SetPos(0, 0);
+		ChipSelect_End;
 	}
 }
 
 void OLED::print_6x8Str(unsigned char x, unsigned char y, const char *ch)
 {
+	ChipSelect_Begin;
 	unsigned char c = 0, i = 0, j = 0;
 	while (ch[j] != '\0')
 	{
@@ -94,10 +99,12 @@ void OLED::print_6x8Str(unsigned char x, unsigned char y, const char *ch)
 		x += 6;
 		j++;
 	}
+	ChipSelect_End;
 }
 
 void OLED::print_8x16Str(unsigned char x, unsigned char y, const char *ch)
 {
+	ChipSelect_Begin;
 	unsigned char c = 0, i = 0, j = 0;
 	while (ch[j] != '\0')
 	{
@@ -120,11 +127,12 @@ void OLED::print_8x16Str(unsigned char x, unsigned char y, const char *ch)
 		x += 8;
 		j++;
 	}
+	ChipSelect_End;
 }
 
 void OLED::print_16x16CN(unsigned char x, unsigned char y, unsigned char N)
 {
-	AutoChipSelect(this);
+	ChipSelect_Begin;
 	unsigned char wm = 0;
 	unsigned int adder = 32 * N;
 	SetPos(x, y);
@@ -139,11 +147,13 @@ void OLED::print_16x16CN(unsigned char x, unsigned char y, unsigned char N)
 		WD(F16x16[adder]);
 		adder += 1;
 	}
+	ChipSelect_End;
 }
 
 void OLED::print_BMP(unsigned char x0, unsigned char y0, unsigned char x1,
 		unsigned char y1, const char *BMP)
 {
+	ChipSelect_Begin;
 	unsigned int j = 0;
 	unsigned char x, y;
 
@@ -161,4 +171,5 @@ void OLED::print_BMP(unsigned char x0, unsigned char y0, unsigned char x1,
 			WD(BMP[j++]);
 		}
 	}
+	ChipSelect_End;
 }

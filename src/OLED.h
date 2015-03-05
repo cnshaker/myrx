@@ -52,9 +52,15 @@
 #define X_WIDTH 		128
 #define Y_WIDTH 		64
 
+#define ChipSelect_Begin	uint8_t old_status=gpiox->ODR&cs_pin;\
+														if(old_status!=Bit_RESET)\
+														gpiox->BRR=cs_pin;
+#define ChipSelect_End		if(old_status!=Bit_RESET)\
+														gpiox->BSRR=cs_pin;
+			
 class OLED
 {
-	class AutoChipSelect
+	/*class AutoChipSelect
 	{
 	public:
 		AutoChipSelect(OLED *parent) :
@@ -64,7 +70,7 @@ class OLED
 			if (old_status != Bit_RESET)
 			{
 				GPIO_ResetBits(oled->gpiox, oled->cs_pin);
-				GPIO_SetBits(GPIOC, GPIO_Pin_13);
+				GPIO_ResetBits(GPIOC, GPIO_Pin_13);
 			}
 		}
 		~AutoChipSelect()
@@ -72,13 +78,13 @@ class OLED
 			if (old_status != Bit_RESET)
 			{
 				GPIO_SetBits(oled->gpiox, oled->cs_pin);
-				GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+				GPIO_SetBits(GPIOC, GPIO_Pin_13);
 			}
 		}
 	private:
 		OLED *oled;
 		uint8_t old_status;
-	};
+	};*/
 public:
 	OLED() :
 			gpiox(GPIOA), cs_pin(1), dc_pin(2)
@@ -107,27 +113,28 @@ private:
 	uint16_t dc_pin;
 	inline void DC_Clr()
 	{
-		GPIO_ResetBits(gpiox, dc_pin);
+		gpiox->BRR = dc_pin;
 	}
 	inline void DC_Set()
 	{
-		GPIO_SetBits(gpiox, dc_pin);
+		gpiox->BSRR = dc_pin;
 	}
-	inline void WB(unsigned char byt)
+	inline u8 WB(u8 byt)
 	{
-		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET)
-			;
-		SPI_I2S_SendData(SPI1, byt);
+		while((SPI1->SR&SPI_I2S_FLAG_TXE)==RESET);
+		SPI1->DR = byt;
+		while((SPI1->SR&SPI_I2S_FLAG_RXNE)==RESET);
+		return SPI1->DR;
 	}
-	void WD(unsigned char dat)
+	inline void WD(unsigned char dat)
 	{
 		DC_Set();
 		WB(dat);
 	}
-	void WC(unsigned char cmd)
+	inline void WC(unsigned char cmd)
 	{
 		DC_Clr();
-		WB (cmd);
+		WB(cmd);
 	}
 };
 

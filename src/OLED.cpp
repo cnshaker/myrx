@@ -7,8 +7,8 @@ void OLED::SetPos(unsigned char x, unsigned char y)
 {
 	ChipSelect_Begin;
 	WC(0xb0 + y);
-	WC(((x&0xf0)>>4)|0x10);
-	WC((x&0x0f)|0x01);
+	WC(((x & 0xf0) >> 4) | 0x10);
+	WC((x & 0x0f) | 0x01);
 	ChipSelect_End;
 }
 
@@ -39,7 +39,7 @@ void OLED::Init()
 	GPIO_SetBits(gpiox, dc_pin);
 	GPIO_SetBits(gpiox, cs_pin);
 
-	DelayMs(1500);
+	delay_ms(1500);
 
 	{
 		//GPIO_ResetBits(gpiox, cs_pin);
@@ -50,7 +50,7 @@ void OLED::Init()
 		WC(0x10); //---set high column address
 		WC(0x40); //--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
 		WC(0x81); //--set contrast control register
-		WC(0xcf); // Set SEG Output Current Brightness
+		WC(0x10); // Set SEG Output Current Brightness
 		WC(0xa1); //--Set SEG/Column Mapping     0xa0,0xa1
 		WC(0xc8); //Set COM/Row Scan Direction   0xc0,0xc8
 		WC(0xa6); //--set normal display

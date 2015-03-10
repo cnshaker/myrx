@@ -57,34 +57,9 @@
 														gpiox->BRR=cs_pin;
 #define ChipSelect_End		if(old_status!=Bit_RESET)\
 														gpiox->BSRR=cs_pin;
-			
+
 class OLED
 {
-	/*class AutoChipSelect
-	{
-	public:
-		AutoChipSelect(OLED *parent) :
-				oled(parent), old_status(
-						GPIO_ReadOutputDataBit(parent->gpiox, parent->cs_pin))
-		{
-			if (old_status != Bit_RESET)
-			{
-				GPIO_ResetBits(oled->gpiox, oled->cs_pin);
-				GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-			}
-		}
-		~AutoChipSelect()
-		{
-			if (old_status != Bit_RESET)
-			{
-				GPIO_SetBits(oled->gpiox, oled->cs_pin);
-				GPIO_SetBits(GPIOC, GPIO_Pin_13);
-			}
-		}
-	private:
-		OLED *oled;
-		uint8_t old_status;
-	};*/
 public:
 	OLED() :
 			gpiox(GPIOA), cs_pin(1), dc_pin(2)
@@ -121,9 +96,11 @@ private:
 	}
 	inline u8 WB(u8 byt)
 	{
-		while((SPI1->SR&SPI_I2S_FLAG_TXE)==RESET);
+		while ((SPI1->SR & SPI_I2S_FLAG_TXE) == RESET)
+			;
 		SPI1->DR = byt;
-		while((SPI1->SR&SPI_I2S_FLAG_RXNE)==RESET);
+		while ((SPI1->SR & SPI_I2S_FLAG_RXNE) == RESET)
+			;
 		return SPI1->DR;
 	}
 	inline void WD(unsigned char dat)

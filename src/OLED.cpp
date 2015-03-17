@@ -39,12 +39,10 @@ void OLED::Init()
 	GPIO_SetBits(gpiox, dc_pin);
 	GPIO_SetBits(gpiox, cs_pin);
 
-	delay_ms(1500);
+	delay_ms(10);
 
 	{
-		//GPIO_ResetBits(gpiox, cs_pin);
 		ChipSelect_Begin;
-		WC(0xae);
 		WC(0xae); //--turn off oled panel
 		WC(0x00); //---set low column address
 		WC(0x10); //---set high column address

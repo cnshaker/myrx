@@ -61,13 +61,10 @@
 class OLED
 {
 public:
-	OLED() :
-			gpiox(GPIOA), cs_pin(1), dc_pin(2)
-	{
-	}
-	OLED(GPIO_TypeDef* GPIOx, uint16_t cs, uint16_t dc) :
+	OLED(GPIO_TypeDef* GPIOx=GPIOA, uint16_t cs=GPIO_Pin_1, uint16_t dc=GPIO_Pin_2) :
 			gpiox(GPIOx), cs_pin(cs), dc_pin(dc)
 	{
+		StartLine(0);
 	}
 	void SetPos(unsigned char x, unsigned char y);
 	void Fill(unsigned char bmp_dat); //全屏填充
@@ -81,11 +78,19 @@ public:
 	void print_16x16CN(unsigned char x, unsigned char y, unsigned char N);
 	void print_BMP(unsigned char x0, unsigned char y0, unsigned char x1,
 			unsigned char y1, const char *BMP);
+	void StartLine(int i)
+	{
+		ChipSelect_Begin;
+		start_line=i;
+		WC(0x40+i);
+		ChipSelect_End;
+	}
 
 private:
 	GPIO_TypeDef *gpiox;
 	uint16_t cs_pin;
 	uint16_t dc_pin;
+	u8 start_line;
 	inline void DC_Clr()
 	{
 		gpiox->BRR = dc_pin;

@@ -26,10 +26,10 @@ void Init_SPI(void)
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
 	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
 	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
-	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
 	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
+	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_InitStructure.SPI_CRCPolynomial = 7;
 	SPI_Init(SPI1, &SPI_InitStructure);
@@ -58,12 +58,11 @@ int main(int argc, char* argv[])
 	oled.Init();
 
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-	TIM3_Int_Init(10000-1,7200-1);//10Khz的计数频率，计数到5000为500ms
+	TIM3_Int_Init(2500-1,7200-1);//10Khz的计数频率，计数到5000为500ms
 
+	int i=3;
 	while (1)
 	{
-		//GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-		//oled.CLS();
 		for (int i = 0; i < 8; i++)
 		{
 			oled.print_16x16CN(i * 16, 0, i);
@@ -71,8 +70,10 @@ int main(int argc, char* argv[])
 			oled.print_16x16CN(i * 16, 4, i + 16);
 			oled.print_16x16CN(i * 16, 6, i + 24);
 		}
-		//GPIO_SetBits(GPIOC, GPIO_Pin_13);
-		delay_ms(2000);		// Add your code here.
+		oled.StartLine(i*16);
+		i--;
+		if(i<0)i=3;
+		delay_ms(500u);		// Add your code here.
 	}
 }
 

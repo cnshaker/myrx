@@ -66,6 +66,7 @@ public:
 	CYRF6936(GPIO_TypeDef*gpio,uint16_t cs,uint16_t reset,SPI_TypeDef* spi)
 		: gpiox(gpio),cs_pin(cs),reset_pin(reset),spix(spi)
 	{
+		CS_HI();
 	}
 	virtual ~CYRF6936(){}
 	inline void CS_LO()
@@ -90,9 +91,9 @@ public:
 
 	inline u8 transfer(u8 byt)
 	{
-		while ((spix->SR & SPI_I2S_FLAG_TXE) == RESET);
+		while (!(spix->SR & SPI_SR_TXE));
 		spix->DR = byt;
-		while ((spix->SR & SPI_I2S_FLAG_RXNE) == RESET);
+		while (!(spix->SR & SPI_SR_RXNE));
 		return spix->DR;
 	}
 	void WriteRegister(u8 address, u8 data);

@@ -3,6 +3,8 @@
 #include "codetab.h"
 #include "stm32f10x_gpio.h"
 
+OLED *oled=(OLED *)0;
+
 void OLED::SetPos(unsigned char x, unsigned char y)
 {
 	ChipSelect_Begin;

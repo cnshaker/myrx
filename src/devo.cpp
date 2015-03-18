@@ -1,10 +1,12 @@
 #include <string.h>
 #include <stm32f10x.h>
 #include <stm32f10x_spi.h>
+#include <stdio.h>
 #include "main.h"
 #include "delay.h"
 #include "devo.h"
 #include "cyrf.h"
+#include "oled.h"
 
 #define PKTS_PER_CHANNEL 4
 #define NUM_WAIT_LOOPS (100 / 5)
@@ -42,7 +44,7 @@ u8 failsafe_pkt;
 u8 radio_ch[5];
 u8 *radio_ch_ptr;
 u8 cyrfmfg_id[6];
-CYRF6936 CYRF(GPIOA,GPIO_Pin_3,GPIO_Pin_4,SPI1);
+CYRF6936 CYRF(GPIOA,GPIO_Pin_3,GPIO_Pin_0,SPI1);
 
 void build_bind_pkt()
 {
@@ -171,12 +173,18 @@ void set_radio_channels()
 	CYRF.FindBestChannels(radio_ch, 5, 4, 4, 80);
 }
 
+char hex_table[]="0123456789ABCDEF";
 void initialize()
 {
+	char buf[32];
 	CYRF.CS_HI();
 	CYRF.Reset();
 	CYRF.Init();
 	CYRF.GetMfgData(cyrfmfg_id);
+	sprintf(buf,"MFG=%02X %02X %02X %02X %02X %02X",
+			cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
+	oled->print_6x8Str(0,0,buf);
+
 	CYRF.ConfigRxTx(true);
 	CYRF.ConfigCRCSeed(0x0000);
 	CYRF.ConfigSOPCode(CYRF6936::sopcodes[0]);

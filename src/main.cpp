@@ -37,42 +37,53 @@ void Init_SPI(void)
 	SPI_Cmd(SPI1, ENABLE);
 }
 
+u16 test(void)
+{
+	if ((GPIOC->ODR & GPIO_Pin_13) != Bit_RESET)
+		GPIOC->BRR = GPIO_Pin_13;
+	else
+		GPIOC->BSRR = GPIO_Pin_13;
+	return 1200;
+
+}
+
 int main(int argc, char* argv[])
 {
 	Init_SPI();
 	delay_init();
 
-	//GPIO_Pin_13 for led
-	//GPIO_Pin_1 for oled's chip select
-	//GPIO_Pin_2 for oled's data/command
-	//GPIO_Pin_3 for cyrf6936's chip select
-	//GPIO_Pin_0 for cyrf's reset
+	//PC13 for led
+	//PA1 for oled's chip select
+	//PA2 for oled's data/command
+	//PA3 for cyrf6936's chip select
+	//PA4 for cyrf's reset
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13 | GPIO_Pin_1 | GPIO_Pin_2	| GPIO_Pin_3 | GPIO_Pin_0;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_SetBits(GPIOA, GPIO_Pin_1 | GPIO_Pin_3);
+
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
 	OLED oled_object(GPIOA,GPIO_Pin_1,GPIO_Pin_2);
 	oled=&oled_object;
 	oled->Init();
 	oled->CLS();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-	TIM3_Int_Init(2500-1,7200-1);//10Khz的计数频率，计数到5000为500ms
+	TIM3_Int_Init(1000-1,7200-1);//10Khz的计数频率
+	
+	CLOCK_Init();
+	CLOCK_StartTimer(100000, test);
 
 	initialize();
 	while (1)
 	{
-		/*for (int i = 0; i < 8; i++)
-		{
-			oled.print_16x16CN(i * 16, 0, i);
-			oled.print_16x16CN(i * 16, 2, i + 8);
-			oled.print_16x16CN(i * 16, 4, i + 16);
-			oled.print_16x16CN(i * 16, 6, i + 24);
-		}
-		delay_ms(500u);*/
 	}
 }
 

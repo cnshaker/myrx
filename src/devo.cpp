@@ -44,7 +44,7 @@ u8 failsafe_pkt;
 u8 radio_ch[5];
 u8 *radio_ch_ptr;
 u8 cyrfmfg_id[6];
-CYRF6936 CYRF(GPIOA,GPIO_Pin_3,GPIO_Pin_0,SPI1);
+CYRF6936 CYRF(GPIOA,GPIO_Pin_3,GPIO_Pin_4,SPI1);
 
 void build_bind_pkt()
 {
@@ -189,6 +189,10 @@ void initialize()
 	CYRF.ConfigCRCSeed(0x0000);
 	CYRF.ConfigSOPCode(CYRF6936::sopcodes[0]);
 	set_radio_channels();
+
+	sprintf(buf,"CHN=%d %d %d",radio_ch[0],radio_ch[1],radio_ch[2]);
+	oled->print_6x8Str(0,1,buf);
+
 	use_fixed_id = 0;
 	failsafe_pkt = 0;
 	radio_ch_ptr = radio_ch;

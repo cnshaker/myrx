@@ -11,12 +11,17 @@
 class TimX
 {
 public:
-	TimX();
-	virtual ~TimX();
-
+	TimX()
+	{
+	}
+	~TimX()
+	{
+	}
 };
 
-void TIM3_Int_Init(u16 arr,u16 psc);
+void TIM3_Int_Init(u16 arr, u16 psc);
+void CLOCK_Init();
+void CLOCK_StartTimer(u16 us, u16 (*cb)(void));
 
 
 #endif /* TIMX_H_ */

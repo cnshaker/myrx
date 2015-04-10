@@ -7,7 +7,7 @@ void cyrf_set_bound_sop_code();
 void scramble_pkt();
 void build_beacon_pkt(int upper);
 void set_radio_channels();
-void initialize();
-int devo_cb();
+void DEVO_Initialize();
+u16 DEVO_Callback();
 void DEVO_BuildPacket();
 #endif

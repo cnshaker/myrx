@@ -37,16 +37,6 @@ void Init_SPI(void)
 	SPI_Cmd(SPI1, ENABLE);
 }
 
-u16 test(void)
-{
-	if ((GPIOC->ODR & GPIO_Pin_13) != Bit_RESET)
-		GPIOC->BRR = GPIO_Pin_13;
-	else
-		GPIOC->BSRR = GPIO_Pin_13;
-	return 1200;
-
-}
-
 int main(int argc, char* argv[])
 {
 	Init_SPI();
@@ -76,14 +66,18 @@ int main(int argc, char* argv[])
 	oled->Init();
 	oled->CLS();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-	TIM3_Int_Init(1000-1,7200-1);//10Khz的计数频率
+	TIM3_Int_Init(10000-1,7200-1);//10Khz的计数频率
 	
 	CLOCK_Init();
-	CLOCK_StartTimer(100000, test);
 
-	initialize();
+	DEVO_Initialize();
+
 	while (1)
 	{
+		/*GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+		delay_ms(100);
+		GPIO_SetBits(GPIOC, GPIO_Pin_13);		
+		delay_ms(500);*/
 	}
 }
 

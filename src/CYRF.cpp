@@ -14,9 +14,9 @@
  */
 const u8 CYRF6936::sopcodes[][8] =
 {
-		/* Note these are in order transmitted (LSB 1st) */
-		/* 0 */
-		{ 0x3C, 0x37, 0xCC, 0x91, 0xE2, 0xF8, 0xCC, 0x91 }, //0x91CCF8E291CC373C
+/* Note these are in order transmitted (LSB 1st) */
+/* 0 */
+{ 0x3C, 0x37, 0xCC, 0x91, 0xE2, 0xF8, 0xCC, 0x91 }, //0x91CCF8E291CC373C
 		/* 1 */
 		{ 0x9B, 0xC5, 0xA1, 0x0F, 0xAD, 0x39, 0xA2, 0x0F }, //0x0FA239AD0FA1C59B
 		/* 2 */
@@ -35,7 +35,7 @@ const u8 CYRF6936::sopcodes[][8] =
 		{ 0xDF, 0xB1, 0xC0, 0x49, 0x62, 0xDF, 0xC1, 0x49 }, //0x49C1DF6249C0B1DF
 		/* 9 */
 		{ 0x97, 0xE5, 0x14, 0x72, 0x7F, 0x1A, 0x14, 0x72 }, //0x72141A7F7214E597
-};
+		};
 
 void CYRF6936::WriteRegister(u8 address, u8 data)
 {
@@ -201,10 +201,11 @@ void CYRF6936::ConfigRFChannel(u8 ch)
 }
 
 //NOTE: This routine will reset the CRC Seed
-void CYRF6936::FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min, u8 max)
+void CYRF6936::FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min,
+		u8 max)
 {
-	const int NUM_FREQ=80;
-	const int FREQ_OFFSET=4;
+	const int NUM_FREQ = 80;
+	const int FREQ_OFFSET = 4;
 	u8 rssi[NUM_FREQ];
 
 	if (min < FREQ_OFFSET)

@@ -19,9 +19,10 @@ public:
 	}
 };
 
+typedef u16 (*timer_callback_t)(void);
 void TIM3_Int_Init(u16 arr, u16 psc);
 void CLOCK_Init();
-void CLOCK_StartTimer(u16 us, u16 (*cb)(void));
-
+void CLOCK_StartTimer(u16 us,timer_callback_t cb);
+void CLOCK_StopTimer();
 
 #endif /* TIMX_H_ */

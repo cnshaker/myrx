@@ -7,6 +7,7 @@
 #include "devo.h"
 #include "cyrf.h"
 #include "oled.h"
+#include "timx.h"
 
 #define PKTS_PER_CHANNEL 4
 #define NUM_WAIT_LOOPS (100 / 5)
@@ -170,12 +171,14 @@ void build_beacon_pkt(int upper)
 void set_radio_channels()
 {
 	int i;
-	CYRF.FindBestChannels(radio_ch, 5, 4, 4, 80);
+	CYRF.FindBestChannels(radio_ch, 3, 4, 4, 80);
+    radio_ch[3] = radio_ch[0];
+    radio_ch[4] = radio_ch[1];
 }
 
-char hex_table[]="0123456789ABCDEF";
-void initialize()
+void DEVO_Initialize()
 {
+	CLOCK_StopTimer();
 	char buf[32];
 	CYRF.CS_HI();
 	CYRF.Reset();
@@ -197,33 +200,31 @@ void initialize()
 	failsafe_pkt = 0;
 	radio_ch_ptr = radio_ch;
 	CYRF.ConfigRFChannel(*radio_ch_ptr);
-	num_channels = ((8 + 3) >> 2) * 4; //8ͨ��
+	//num_channels = ((Model.num_channels + 3) >> 2) * 4;
+	num_channels = (8 + 3)& ~0xfc; //8ͨ通道
 	pkt_num = 0;
 	ch_idx = 0;
 	txState = 0;
 
-	fixed_id = ((unsigned long) (radio_ch[0] ^ cyrfmfg_id[0] ^ cyrfmfg_id[3]) << 16)
-			| ((unsigned long) (radio_ch[1] ^ cyrfmfg_id[1] ^ cyrfmfg_id[4]) << 8)
-			| ((unsigned long) (radio_ch[2] ^ cyrfmfg_id[2] ^ cyrfmfg_id[5]) << 0);
+	//伪随机
+	fixed_id = ((u32) (radio_ch[0] ^ cyrfmfg_id[0] ^ cyrfmfg_id[3]) << 16)
+			| ((u32) (radio_ch[1] ^ cyrfmfg_id[1] ^ cyrfmfg_id[4]) << 8)
+			| ((u32) (radio_ch[2] ^ cyrfmfg_id[2] ^ cyrfmfg_id[5]) << 0);
+	//取模
 	fixed_id = fixed_id % 1000000;
 	bind_counter = BIND_COUNT;
 	state = DEVO_BIND;
-	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //TODO:���PROTOCOL_SetBindState msecs
+	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
 
-	//MsTimer2::set(2, devo_cb);
-	//MsTimer2::start();
-	//if (Model.proto_opts[PROTOOPTS_TELEMETRY] == TELEM_ON) {
-	//	CLOCK_StartTimer(2400, devo_telemetry_cb);
-	//} else {
-	//	CLOCK_StartTimer(2400, devo_cb);
-	//}
+	CLOCK_StartTimer(2400, DEVO_Callback);
+
 }
 
-int devo_cb()
+u16 DEVO_Callback()
 {
 	if (txState == 0)
 	{
-		//Serial.println("send packet");
+		//发送数据包
 		txState = 1;
 		DEVO_BuildPacket();
 		CYRF.WriteDataPacket(packet);
@@ -231,22 +232,14 @@ int devo_cb()
 	}
 	txState = 0;
 	int i = 0;
-	//unsigned long time=micros();
+	//检查发送状态
 	u8 IRQ_STATUS = 0;
 	while (!((IRQ_STATUS = CYRF.ReadRegister(CYRF_04_TX_IRQ_STATUS)) & 0x02))
 	{
-		//Serial.println(IRQ_STATUS,BIN);
-		//if((micros()-time)>=100)
-		//{
-		//Serial.println("send packet fail");
-		return 1200;
-		//}
+        if(++i > NUM_WAIT_LOOPS)
+            return 1200;//如果发送失败1200us后重新发送
 	}
-	//Serial.print("TX_IRQ_STATUS=");
-	//Serial.println(IRQ_STATUS,BIN);
-	//Serial.print("TX_LENGTH=");
-	//Serial.println(CYRF_ReadRegister(CYRF_01_TX_LENGTH));
-	if (state == DEVO_BOUND)
+	if (state == DEVO_BOUND)//已经绑定成功
 	{
 		/* exit binding state */
 		state = DEVO_BOUND_3;
@@ -256,8 +249,7 @@ int devo_cb()
 	{
 		//Keep tx power updated
 		CYRF.WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
-		radio_ch_ptr =
-				radio_ch_ptr == &radio_ch[2] ? radio_ch : radio_ch_ptr + 1;
+		radio_ch_ptr = ((radio_ch_ptr == &radio_ch[2]) ? radio_ch : radio_ch_ptr + 1);
 		CYRF.ConfigRFChannel(*radio_ch_ptr);
 	}
 	return 1200;

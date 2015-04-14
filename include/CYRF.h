@@ -62,7 +62,6 @@ private:
 	uint16_t reset_pin;
 	SPI_TypeDef* spix;
 public:
-	static const u8 sopcodes[][8];
 	CYRF6936(GPIO_TypeDef*gpio,uint16_t cs,uint16_t reset,SPI_TypeDef* spi)
 		: gpiox(gpio),cs_pin(cs),reset_pin(reset),spix(spi)
 	{

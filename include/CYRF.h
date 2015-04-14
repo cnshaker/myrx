@@ -101,7 +101,7 @@ public:
 	void ReadRegisterMulti(u8 address, u8 data[], u8 length);
 	u8 ReadRegister(u8 address);
 	void Reset();
-	void ConfigRxTx(bool Tx);
+	void ConfigRxTx(u32 TxRx);//1 - Tx else Rx
 	void ConfigCRCSeed(u16 crc);
 	void ConfigSOPCode(const u8 *sopcodes);
 	void ConfigDataCode(const u8 *datacodes, u8 len);

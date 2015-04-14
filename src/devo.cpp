@@ -15,22 +15,19 @@
 #define CHAN_MAX_VALUE (100 * CHAN_MULTIPLIER)
 #define NUM_OUT_CHANNELS 12
 #define BIND_COUNT 0x1388
-enum PktState
-{
-	DEVO_BIND = 1,
-	DEVO_BIND_SENDCH = 2,
-	DEVO_BOUND = 3,
-	DEVO_BOUND_1 = 4,
-	DEVO_BOUND_2 = 5,
-	DEVO_BOUND_3 = 6,
-	DEVO_BOUND_4 = 7,
-	DEVO_BOUND_5 = 8,
-	DEVO_BOUND_6 = 9,
-	DEVO_BOUND_7 = 10,
-	DEVO_BOUND_8 = 11,
-	DEVO_BOUND_9 = 12,
-	DEVO_BOUND_10 = 13,
-};
+const int DEVO_BIND = 1;
+const int DEVO_BIND_SENDCH = 2;
+const int DEVO_BOUND = 3;
+const int DEVO_BOUND_1 = 4;
+const int DEVO_BOUND_2 = 5;
+const int DEVO_BOUND_3 = 6;
+const int DEVO_BOUND_4 = 7;
+const int DEVO_BOUND_5 = 8;
+const int DEVO_BOUND_6 = 9;
+const int DEVO_BOUND_7 = 10;
+const int DEVO_BOUND_8 = 11;
+const int DEVO_BOUND_9 = 12;
+const int DEVO_BOUND_10 = 13;
 u8 num_channels;
 u8 packet[16];
 int bind_counter;
@@ -38,7 +35,7 @@ u8 use_fixed_id;
 u8 pkt_num;
 unsigned long fixed_id;
 u8 txState;
-enum PktState state;
+int state;
 u8 ch_idx;
 int Channels[NUM_OUT_CHANNELS];
 u8 failsafe_pkt;
@@ -148,12 +145,12 @@ void build_beacon_pkt(int upper)
 	packet[0] = ((num_channels << 4) | 0x07);
 	u8 enable = 0;
 	int max = 8;
-	int offset = 0;
+	//int offset = 0;
 	if (upper)
 	{
 		packet[0] += 1;
 		max = 4;
-		offset = 8;
+		//offset = 8;
 	}
 	for (int i = 0; i < max; i++)
 	{
@@ -170,7 +167,7 @@ void build_beacon_pkt(int upper)
 
 void set_radio_channels()
 {
-	int i;
+	//int i;
 	CYRF.FindBestChannels(radio_ch, 3, 4, 4, 80);
     radio_ch[3] = radio_ch[0];
     radio_ch[4] = radio_ch[1];
@@ -273,7 +270,8 @@ void DEVO_BuildPacket()
 		if (bind_counter <= 0)
 		{
 			state = DEVO_BOUND;
-			//TOTO:PROTOCOL_SetBindState(0);
+			//PROTOCOL_SetBindState(0);
+			oled->print_6x8Str(0,2,"Bind End");
 		}
 		else
 		{
@@ -293,12 +291,15 @@ void DEVO_BuildPacket()
 		//Serial.println("DEVO_BuildPacket: DEVO_BOUND");
 		build_data_pkt();
 		scramble_pkt();
-		//state++;
+		state++;
 		if (bind_counter > 0)
 		{
 			bind_counter--;
-			//if (bind_counter == 0)
-			//TOTO:PROTOCOL_SetBindState(0);
+			if (bind_counter == 0)
+			{
+				//TOTO:PROTOCOL_SetBindState(0);
+				oled->print_6x8Str(0,3,"Bind End in DEVO_BOUND");
+			}
 		}
 		break;
 	case DEVO_BOUND_10:

@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 	oled->Init();
 	oled->CLS();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
-	TIM3_Int_Init(10000-1,7200-1);//10Khz的计数频率
+	TIM3_Int_Init(5000-1,7200-1);//10Khz的计数频率
 	
 	CLOCK_Init();
 

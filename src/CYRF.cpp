@@ -1,9 +1,11 @@
 #include "main.h"
 #include "delay.h"
 #include "CYRF.h"
+#include "oled.h"
 #include <string.h>
 #include <stm32f10x.h>
 #include <stm32f10x_spi.h>
+#include <stdio.h>
 /*
  nSS * * SCK
  IRQ * * MOSI
@@ -40,6 +42,7 @@ void CYRF6936::WriteRegisterMulti(u8 address, const u8 data[], u8 length)
 void CYRF6936::ReadRegisterMulti(u8 address, u8 data[], u8 length)
 {
 	address &= CYRF_ADR_MASK;
+	address |= CYRF_READ;
 	unsigned char i;
 	CS_LO();
 	transfer(address);
@@ -53,8 +56,8 @@ void CYRF6936::ReadRegisterMulti(u8 address, u8 data[], u8 length)
 u8 CYRF6936::ReadRegister(u8 address)
 {
 	address &= CYRF_ADR_MASK;
+	address |= CYRF_READ;
 	u8 data;
-
 	CS_LO();
 	transfer(address);
 	data = transfer(0);
@@ -75,13 +78,17 @@ void CYRF6936::ConfigRxTx(u32 TxRx)
 {
 	if (TxRx)
 	{
-		WriteRegister(CYRF_0E_GPIO_CTRL, 0x80);
-		WriteRegister(CYRF_0F_XACT_CFG, 0x2C);
+		oled->print_6x8Str(0, 3, "Tx Mode");
+		WriteRegister(CYRF_0E_GPIO_CTRL, PACTL_OP);
+		WriteRegister(CYRF_0F_XACT_CFG,
+				FRC_END_STATE | END_STATE_TXSYNTH);
 	}
 	else
 	{
-		WriteRegister(CYRF_0E_GPIO_CTRL, 0x20);
-		WriteRegister(CYRF_0F_XACT_CFG, 0x28);
+		oled->print_6x8Str(0, 3, "Rx Mode");
+		WriteRegister(CYRF_0E_GPIO_CTRL, XOUT_OP);
+		WriteRegister(CYRF_0F_XACT_CFG,
+				FRC_END_STATE | END_STATE_RXSYNTH);
 	}
 }
 
@@ -116,15 +123,15 @@ void CYRF6936::WritePreamble(unsigned long preamble)
 void CYRF6936::Init()
 {
 	/* Initialise CYRF chip */
-    WriteRegister(CYRF_1D_MODE_OVERRIDE, 0x39);
-	WriteRegister(CYRF_03_TX_CFG, 0x08 | 7);
-	WriteRegister(CYRF_06_RX_CFG, 0x4A);
-	WriteRegister(CYRF_0B_PWR_CTRL, 0x00);
-	WriteRegister(CYRF_0D_IO_CFG, 0x04);
-	WriteRegister(CYRF_0E_GPIO_CTRL, 0x20);
-	WriteRegister(CYRF_10_FRAMING_CFG, 0xA4);
-	WriteRegister(CYRF_11_DATA32_THOLD, 0x05);
-	WriteRegister(CYRF_12_DATA64_THOLD, 0x0E);
+    WriteRegister(MODE_OVERRIDE_ADR, FRC_SEN|MODE_OVRD_FRC_AWAKE|RST);
+	WriteRegister(TX_CFG_ADR, DATMODE_8DR|PA_4_DBM);
+	WriteRegister(RX_CFG_ADR, LNA_EN|FASTTURN_EN|RXOW_EN);
+	WriteRegister(PWR_CTRL_ADR, 0x00);
+	WriteRegister(IO_CFG_ADR, PACTL_GPIO);
+	WriteRegister(GPIO_CTRL_ADR, PACTL_OP);
+	WriteRegister(FRAMING_CFG_ADR, SOP_EN|LEN_EN|0x04);
+	WriteRegister(DATA32_THOLD_ADR, 0x05);
+	WriteRegister(DATA64_THOLD_ADR, 0x0E);
 	WriteRegister(CYRF_1B_TX_OFFSET_LSB, 0x55);
 	WriteRegister(CYRF_1C_TX_OFFSET_MSB, 0x05);
 	WriteRegister(CYRF_32_AUTO_CAL_TIME, 0x3C);
@@ -170,9 +177,13 @@ u8 CYRF6936::ReadRSSI(unsigned long dodummyread)
 	}
 	return (result & 0x0F);
 }
+
 u8 channel;
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
+	char buf[12];
+	sprintf(buf,"Channel=%d",ch);
+	oled->print_6x8Str(8*6,3,buf);
 	channel=ch;
 	WriteRegister(CYRF_00_CHANNEL, ch);
 }

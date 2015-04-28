@@ -71,15 +71,16 @@ extern "C" void TIM4_IRQHandler(void)
 		TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
 		if (timer_callback)
 		{
+			u16 cap = TIM_GetCapture1(TIM4);
 			u16 us = timer_callback();
 			TIM_ClearFlag(TIM4, TIM_FLAG_CC1);
 			if (us)
 			{
-				TIM_SetCompare1(TIM4, us + TIM_GetCapture1(TIM4));
+				TIM_SetCompare1(TIM4, us + cap);
 				return;
 			}
 		}
-		//CLOCK_StopTimer();
+		CLOCK_StopTimer();
 	}
 }
 

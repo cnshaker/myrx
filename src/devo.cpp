@@ -62,6 +62,8 @@ static u8 failsafe_pkt;
 volatile s16 Channels[NUM_OUT_CHANNELS];
 
 CYRF6936 CYRF(GPIOA,GPIO_Pin_3,GPIO_Pin_4,SPI1);
+    char name[24];
+
 
 //加密
 static void scramble_pkt()
@@ -393,9 +395,17 @@ void DEVO_Initialize()
 	CLOCK_StartTimer(2400, DEVO_Callback);
 
 }
+const char bind_state[][16]={
+"B  ",
+" S ",
+"  E",
+};
 
 u16 DEVO_Callback()
 {
+	//char buf[12];
+	//sprintf(buf,"%s",bind_state[state>2?2:state]);
+	oled->print_6x8Str(0,4,bind_state[state>2?2:state]);
 	if (txState == 0)
 	{
 		//发送数据包

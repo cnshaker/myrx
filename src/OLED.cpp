@@ -35,11 +35,15 @@ void OLED::Init()
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = cs_pin | dc_pin;
+	GPIO_InitStructure.GPIO_Pin = cs.pin;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(gpiox, &GPIO_InitStructure);
-	GPIO_SetBits(gpiox, dc_pin);
-	GPIO_SetBits(gpiox, cs_pin);
+	GPIO_Init(cs.gpiox, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin = dc.pin;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(dc.gpiox, &GPIO_InitStructure);
+	GPIO_SetBits(dc.gpiox, dc.pin);
+	GPIO_SetBits(cs.gpiox, cs.pin);
 
 	delay_ms(10);
 

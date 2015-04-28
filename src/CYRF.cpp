@@ -76,7 +76,7 @@ void CYRF6936::Reset()
 
 void CYRF6936::ConfigRxTx(u32 TxRx)
 {
-	if (TxRx)
+	if(TxRx!=0)
 	{
 		oled->print_6x8Str(0, 3, "Tx Mode");
 		WriteRegister(CYRF_0E_GPIO_CTRL, PACTL_OP);
@@ -183,7 +183,7 @@ void CYRF6936::ConfigRFChannel(u8 ch)
 {
 	char buf[12];
 	sprintf(buf,"Channel=%d",ch);
-	oled->print_6x8Str(8*6,3,buf);
+	oled->print_6x8Str(0,3,buf);
 	channel=ch;
 	WriteRegister(CYRF_00_CHANNEL, ch);
 }

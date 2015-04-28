@@ -1,6 +1,6 @@
 #ifndef __CYRF_H__
 #define __CYRF_H__
-#include <stm32f10x.h>
+#include "main.h"
 enum CYRF_REGISTER_ADDR
 {
 	CYRF_00_CHANNEL = 0x01,
@@ -10,7 +10,7 @@ enum CYRF_REGISTER_ADDR
 	CYRF_04_TX_IRQ_STATUS = 0x04,
 	CYRF_05_RX_CTRL = 0x05,
 	CYRF_06_RX_CFG = 0x06,
-	CYRF_07_RX_IRG_STATUS = 0x07,
+	CYRF_07_RX_IRQ_STATUS = 0x07,
 	CYRF_08_RX_STATUS = 0x08,
 	CYRF_09_RX_COUNT = 0x09,
 	CYRF_0A_RX_LENGTH = 0x0A,
@@ -610,35 +610,34 @@ const u8 CYRF_ADR_MASK=0x3F;
 class CYRF6936
 {
 private:
-	GPIO_TypeDef *gpiox;
-	uint16_t cs_pin;
-	uint16_t reset_pin;
+	GPIO_Pin cs_pin;
+	GPIO_Pin reset_pin;
 	SPI_TypeDef* spix;
 public:
-	CYRF6936(GPIO_TypeDef*gpio,uint16_t cs,uint16_t reset,SPI_TypeDef* spi)
-		: gpiox(gpio),cs_pin(cs),reset_pin(reset),spix(spi)
+	CYRF6936(GPIO_Pin cs,GPIO_Pin reset,SPI_TypeDef* spi)
+		: cs_pin(cs),reset_pin(reset),spix(spi)
 	{
 		CS_HI();
 	}
 	virtual ~CYRF6936(){}
 	inline void CS_LO()
 	{
-		GPIO_ResetBits(gpiox, cs_pin);
+		GPIO_ResetBits(cs_pin.gpiox, cs_pin.pin);
 	}
 
 	inline void CS_HI()
 	{
-		GPIO_SetBits(gpiox, cs_pin);
+		GPIO_SetBits(cs_pin.gpiox, cs_pin.pin);
 	}
 
 	inline void RS_LO()
 	{
-		GPIO_ResetBits(gpiox, reset_pin);
+		GPIO_ResetBits(reset_pin.gpiox, reset_pin.pin);
 	}
 
 	inline void RS_HI()
 	{
-		GPIO_SetBits(gpiox, reset_pin);
+		GPIO_SetBits(reset_pin.gpiox, reset_pin.pin);
 	}
 
 	inline u8 transfer(u8 byt)

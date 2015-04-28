@@ -40,8 +40,7 @@
 
 #ifndef __OLED_H
 #define __OLED_H
-#include "stm32f10x_gpio.h"
-#include "stm32f10x_spi.h"
+#include "main.h"
 
 #define XLevelL			0x00
 #define XLevelH			0x10
@@ -52,17 +51,17 @@
 #define X_WIDTH 		128
 #define Y_WIDTH 		64
 
-#define ChipSelect_Begin	uint8_t old_status=gpiox->ODR&cs_pin;\
+#define ChipSelect_Begin	uint8_t old_status=cs.gpiox->ODR&cs.pin;\
 														if(old_status!=Bit_RESET)\
-														gpiox->BRR=cs_pin;
+														cs.gpiox->BRR=cs.pin;
 #define ChipSelect_End		if(old_status!=Bit_RESET)\
-														gpiox->BSRR=cs_pin;
+														cs.gpiox->BSRR=cs.pin;
 
 class OLED
 {
 public:
-	OLED(GPIO_TypeDef* GPIOx=GPIOA, uint16_t cs=GPIO_Pin_1, uint16_t dc=GPIO_Pin_2) :
-			gpiox(GPIOx), cs_pin(cs), dc_pin(dc)
+	OLED(GPIO_Pin cs_pin, GPIO_Pin dc_pin) :
+			cs(cs_pin), dc(dc_pin)
 	{
 		StartLine(0);
 	}
@@ -87,25 +86,22 @@ public:
 	}
 
 private:
-	GPIO_TypeDef *gpiox;
-	uint16_t cs_pin;
-	uint16_t dc_pin;
+	GPIO_Pin  cs;
+	GPIO_Pin  dc;
 	u8 start_line;
 	inline void DC_Clr()
 	{
-		gpiox->BRR = dc_pin;
+		dc.gpiox->BRR = dc.pin;
 	}
 	inline void DC_Set()
 	{
-		gpiox->BSRR = dc_pin;
+		dc.gpiox->BSRR = dc.pin;
 	}
 	inline u8 WB(u8 byt)
 	{
-		while ((SPI1->SR & SPI_I2S_FLAG_TXE) == RESET)
-			;
+		while ((SPI1->SR & SPI_I2S_FLAG_TXE) == RESET);
 		SPI1->DR = byt;
-		while ((SPI1->SR & SPI_I2S_FLAG_RXNE) == RESET)
-			;
+		while ((SPI1->SR & SPI_I2S_FLAG_RXNE) == RESET);
 		return SPI1->DR;
 	}
 	inline void WD(unsigned char dat)

@@ -61,8 +61,8 @@ static u8 failsafe_pkt;
 
 volatile s16 Channels[NUM_OUT_CHANNELS];
 
-CYRF6936 CYRF(GPIOA,GPIO_Pin_3,GPIO_Pin_4,SPI1);
-    char name[24];
+CYRF6936 CYRF(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
+char name[24];
 
 
 //加密

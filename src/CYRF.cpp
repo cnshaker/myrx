@@ -123,7 +123,7 @@ void CYRF6936::WritePreamble(unsigned long preamble)
 void CYRF6936::Init()
 {
 	/* Initialise CYRF chip */
-    WriteRegister(MODE_OVERRIDE_ADR, FRC_SEN|MODE_OVRD_FRC_AWAKE|RST);
+	WriteRegister(MODE_OVERRIDE_ADR, FRC_SEN|MODE_OVRD_FRC_AWAKE|RST);
 	WriteRegister(TX_CFG_ADR, DATMODE_8DR|PA_4_DBM);
 	WriteRegister(RX_CFG_ADR, LNA_EN|FASTTURN_EN|RXOW_EN);
 	WriteRegister(PWR_CTRL_ADR, 0x00);
@@ -182,7 +182,7 @@ u8 channel;
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
 	char buf[12];
-	sprintf(buf,"Channel=%d",ch);
+	sprintf(buf,"Channel=% 4d",ch);
 	oled->print_6x8Str(0,3,buf);
 	channel=ch;
 	WriteRegister(CYRF_00_CHANNEL, ch);
@@ -201,14 +201,12 @@ void CYRF6936::FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min,
 	if (max > NUM_FREQ)
 		max = NUM_FREQ;
 
-	int i;
-	int j;
 	memset(channels, 0, sizeof(u8) * len);
 	ConfigCRCSeed(0x0000);
 	ConfigRxTx(0);
 	//Wait for pre-amp to switch from sned to receive
 	delay_us(1000);
-	for (i = 0; i < NUM_FREQ; i++)
+	for(int i=0;i<NUM_FREQ;i++)
 	{
 		ConfigRFChannel(i);
 		ReadRegister(CYRF_13_RSSI);
@@ -217,10 +215,10 @@ void CYRF6936::FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min,
 		rssi[i] = ReadRegister(CYRF_13_RSSI);
 	}
 
-	for (i = 0; i < len; i++)
+	for(int i=0;i<len;i++)
 	{
 		channels[i] = min;
-		for (j = min; j < max; j++)
+		for (int j=min;j<max;j++)
 		{
 			if (rssi[j] < rssi[channels[i]])
 			{
@@ -228,7 +226,7 @@ void CYRF6936::FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min,
 			}
 
 		}
-		for (j = channels[i] - minspace; j < channels[i] + minspace; j++)
+		for (int j=channels[i]-minspace;j<channels[i]+minspace;j++)
 		{
 			//Ensure we don't reuse any channels within minspace of the selected channel again
 			if (j < 0 || j >= NUM_FREQ)

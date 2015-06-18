@@ -61,7 +61,7 @@ static u8 failsafe_pkt;
 
 volatile s16 Channels[NUM_OUT_CHANNELS];
 
-CYRF6936 CYRF(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
+CYRF6936* CYRF;
 char name[24];
 
 
@@ -270,17 +270,17 @@ static void cyrf_set_bound_sop_code()
     if(! crc)
         crc = 1;
     u8 sopidx = (0xff &((cyrfmfg_id[0] << 2) + cyrfmfg_id[1] + cyrfmfg_id[2])) % 10;
-    CYRF.ConfigRxTx(1);
-    CYRF.ConfigCRCSeed((crc << 8) + crc);
-    CYRF.ConfigSOPCode(sopcodes[sopidx]);
-    CYRF.WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
+    CYRF->ConfigRxTx(1);
+    CYRF->ConfigCRCSeed((crc << 8) + crc);
+    CYRF->ConfigSOPCode(sopcodes[sopidx]);
+    CYRF->WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
 }
 
 //设置频道
 void set_radio_channels()
 {
 	//从4-80信道找出找出3个信号最好的信道，最小间隔4
-	CYRF.FindBestChannels(radio_ch, 3, 4, 4, 80);
+	CYRF->FindBestChannels(radio_ch, 3, 4, 4, 80);
     radio_ch[3] = radio_ch[0];
     radio_ch[4] = radio_ch[1];
 }
@@ -351,18 +351,26 @@ void DEVO_BuildPacket()
 void DEVO_Initialize()
 {
 	CLOCK_StopTimer();
+	CYRF=new CYRF6936(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
 	char buf[32];
-	CYRF.CS_HI();
-	CYRF.Reset();
-	CYRF.Init();
-	CYRF.GetMfgData(cyrfmfg_id);
+	CYRF->CS_HI();
+	CYRF->Reset();
+	CYRF->WriteRegister(0x1,0x2A);
+	u8 r=CYRF->ReadRegister(0x1);
+	if(r!=0x2A)
+	{
+		oled->print_6x8Str(0,0,"cyrf6936 fail!!");
+		while(true);
+	}
+	CYRF->Init();
+	CYRF->GetMfgData(cyrfmfg_id);
 	sprintf(buf,"MFG=%02X %02X %02X %02X %02X %02X",
 			cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
 	oled->print_6x8Str(0,0,buf);
 
-	CYRF.ConfigRxTx(1);
-	CYRF.ConfigCRCSeed(0x0000);
-	CYRF.ConfigSOPCode(sopcodes[0]);
+	CYRF->ConfigRxTx(1);
+	CYRF->ConfigCRCSeed(0x0000);
+	CYRF->ConfigSOPCode(sopcodes[0]);
 	set_radio_channels();
 
 	sprintf(buf,"CHN=%d %d %d",radio_ch[0],radio_ch[1],radio_ch[2]);
@@ -371,7 +379,7 @@ void DEVO_Initialize()
 	use_fixed_id = 0;
 	failsafe_pkt = 0;
 	radio_ch_ptr = radio_ch;
-	CYRF.ConfigRFChannel(*radio_ch_ptr);
+	CYRF->ConfigRFChannel(*radio_ch_ptr);
 	//num_channels = ((Model.num_channels + 3) >> 2) * 4;
 	num_channels = (8 + 3)&0xfc; //8ͨ通道
 	pkt_num = 0;
@@ -389,7 +397,7 @@ void DEVO_Initialize()
 	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
 
 	u8 d;
-	d=CYRF.ReadRegister(CYRF_0C_XTAL_CTRL);
+	d=CYRF->ReadRegister(CYRF_0C_XTAL_CTRL);
 	sprintf(buf,"XTAL_CTRL=%02X",d);
 	oled->print_6x8Str(0,6,buf);
 	CLOCK_StartTimer(2400, DEVO_Callback);
@@ -411,14 +419,14 @@ u16 DEVO_Callback()
 		//发送数据包
 		txState = 1;
 		DEVO_BuildPacket();
-		CYRF.WriteDataPacket(packet);
+		CYRF->WriteDataPacket(packet);
 		return 1200;
 	}
 	txState = 0;
 	int i = 0;
 	//检查发送状态
 	u8 IRQ_STATUS = 0;
-	while (!((IRQ_STATUS = CYRF.ReadRegister(CYRF_04_TX_IRQ_STATUS)) & 0x02))
+	while (!((IRQ_STATUS = CYRF->ReadRegister(CYRF_04_TX_IRQ_STATUS)) & 0x02))
 	{
         if(++i > NUM_WAIT_LOOPS)
             return 1200;//如果发送失败1200us后重新发送
@@ -432,9 +440,9 @@ u16 DEVO_Callback()
 	if (pkt_num == 0)
 	{
 		//Keep tx power updated
-		CYRF.WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
+		CYRF->WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
 		radio_ch_ptr = ((radio_ch_ptr == &radio_ch[2]) ? radio_ch : radio_ch_ptr + 1);
-		CYRF.ConfigRFChannel(*radio_ch_ptr);
+		CYRF->ConfigRFChannel(*radio_ch_ptr);
 	}
 	return 1200;
 }

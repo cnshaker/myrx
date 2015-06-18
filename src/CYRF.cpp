@@ -81,14 +81,14 @@ void CYRF6936::ConfigRxTx(u32 TxRx)
 		oled->print_6x8Str(0, 3, "Tx Mode");
 		WriteRegister(CYRF_0E_GPIO_CTRL, PACTL_OP);
 		WriteRegister(CYRF_0F_XACT_CFG,
-				FRC_END_STATE | END_STATE_TXSYNTH);
+				FRC_END_STATE | END_STATE_RXSYNTH);
 	}
 	else
 	{
 		oled->print_6x8Str(0, 3, "Rx Mode");
 		WriteRegister(CYRF_0E_GPIO_CTRL, XOUT_OP);
 		WriteRegister(CYRF_0F_XACT_CFG,
-				FRC_END_STATE | END_STATE_RXSYNTH);
+				FRC_END_STATE | END_STATE_TXSYNTH);
 	}
 }
 

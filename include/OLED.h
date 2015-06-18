@@ -11,11 +11,14 @@
 #define X_WIDTH 		128
 #define Y_WIDTH 		64
 
-#define ChipSelect_Begin	uint8_t old_status=cs.gpiox->ODR&cs.pin;\
+/*#define ChipSelect_Begin	uint8_t old_status=cs.gpiox->ODR&cs.pin;\
 														if(old_status!=Bit_RESET)\
 														cs.gpiox->BRR=cs.pin;
 #define ChipSelect_End		if(old_status!=Bit_RESET)\
-														cs.gpiox->BSRR=cs.pin;
+														cs.gpiox->BSRR=cs.pin;*/
+														
+#define ChipSelect_Begin
+#define ChipSelect_End
 
 class OLED
 {
@@ -23,7 +26,7 @@ public:
 	OLED(GPIO_Pin cs_pin, GPIO_Pin dc_pin) :
 			cs(cs_pin), dc(dc_pin)
 	{
-		StartLine(0);
+		//StartLine(0);
 	}
 	void SetPos(unsigned char x, unsigned char y);
 	void Fill(unsigned char bmp_dat); //全屏填充
@@ -66,13 +69,17 @@ private:
 	}
 	inline void WD(unsigned char dat)
 	{
+		cs.gpiox->BRR=cs.pin;
 		DC_Set();
 		WB(dat);
+		cs.gpiox->BSRR=cs.pin;
 	}
 	inline void WC(unsigned char cmd)
 	{
+		cs.gpiox->BRR=cs.pin;
 		DC_Clr();
 		WB(cmd);
+		cs.gpiox->BSRR=cs.pin;
 	}
 };
 

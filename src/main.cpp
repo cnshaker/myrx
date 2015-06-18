@@ -4,6 +4,7 @@
 #include "delay.h"
 #include "OLED.h"
 #include "Timx.h"
+#include "cyrf.h"
 #include "devo.h"
 
 void Init_SPI(void)
@@ -96,6 +97,9 @@ int main(int argc, char* argv[])
 	TIM3_Int_Init(5000-1,7200-1);//10Khz的计数频率
 	
 	CLOCK_Init();
+	
+	CYRF6936 _CYRF(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
+	CYRF=&_CYRF;
 
 	DEVO_Initialize();
 

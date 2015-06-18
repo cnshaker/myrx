@@ -60,7 +60,7 @@ u8 CYRF6936::ReadRegister(u8 address)
 	u8 data;
 	CS_LO();
 	transfer(address);
-	data = transfer(0);
+	data = transfer(address);
 	CS_HI();
 	return data;
 }

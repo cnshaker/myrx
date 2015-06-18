@@ -55,8 +55,8 @@ extern "C" void TIM3_IRQHandler(void) //TIM3中断
 			GPIO_SetBits(GPIOC, GPIO_Pin_13);
 			char buf[8];
 			ttt++;
-			sprintf(buf,"%d",ttt);
-			oled->print_6x8Str(0,7,buf);
+			//sprintf(buf,"%d",ttt);
+			//oled->print_6x8Str(0,7,buf);
 
 		}
 	}

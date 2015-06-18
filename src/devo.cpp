@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include "main.h"
 #include "delay.h"
-#include "devo.h"
 #include "cyrf.h"
+#include "devo.h"
 #include "oled.h"
 #include "timx.h"
 
@@ -351,16 +351,15 @@ void DEVO_BuildPacket()
 void DEVO_Initialize()
 {
 	CLOCK_StopTimer();
-	CYRF=new CYRF6936(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
 	char buf[32];
 	CYRF->CS_HI();
 	CYRF->Reset();
-	CYRF->WriteRegister(0x1,0x2A);
-	u8 r=CYRF->ReadRegister(0x1);
+	CYRF->WriteRegister(TX_LENGTH_ADR,0x2A);
+	u8 r=CYRF->ReadRegister(TX_LENGTH_ADR);
 	if(r!=0x2A)
 	{
 		oled->print_6x8Str(0,0,"cyrf6936 fail!!");
-		while(true);
+		//while(true);
 	}
 	CYRF->Init();
 	CYRF->GetMfgData(cyrfmfg_id);

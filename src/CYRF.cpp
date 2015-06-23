@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stm32f10x.h>
 #include <stm32f10x_spi.h>
-#include <stdio.h>
+#include "segger_rtt.h"
 /*
  nSS * * SCK
  IRQ * * MOSI
@@ -79,7 +79,7 @@ void CYRF6936::ConfigRxTx(u32 TxRx)
 	if(TxRx!=0)
 	{
 		//oled->print_6x8Str(0, 3, "Tx Mode");
-		printf("Tx Mode\n");
+		SEGGER_RTT_printf(0,"Tx Mode\n");
 		WriteRegister(CYRF_0E_GPIO_CTRL, PACTL_OP);
 		WriteRegister(CYRF_0F_XACT_CFG,
 				FRC_END_STATE | END_STATE_RXSYNTH);
@@ -87,7 +87,7 @@ void CYRF6936::ConfigRxTx(u32 TxRx)
 	else
 	{
 		//oled->print_6x8Str(0, 3, "Rx Mode");
-		printf("Rx Mode\n");
+		SEGGER_RTT_printf(0,"Rx Mode\n");
 		WriteRegister(CYRF_0E_GPIO_CTRL, XOUT_OP);
 		WriteRegister(CYRF_0F_XACT_CFG,
 				FRC_END_STATE | END_STATE_TXSYNTH);
@@ -184,7 +184,7 @@ u8 channel;
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
 	//char buf[12];
-	printf("Channel=%d\n",ch);
+	//SEGGER_RTT_printf(0,"Channel=%d\n",ch);
 	//oled->print_6x8Str(0,3,buf);
 	channel=ch;
 	WriteRegister(CYRF_00_CHANNEL, ch);

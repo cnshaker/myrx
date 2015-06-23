@@ -8,6 +8,7 @@
 #include "cyrf.h"
 #include "oled.h"
 #include "timx.h"
+#include "segger_rtt.h"
 
 #define PKTS_PER_CHANNEL 4
 #define NUM_WAIT_LOOPS (100 / 5)
@@ -305,7 +306,7 @@ void DEVO_BuildPacket()
 			state = DEVO_BOUND;
 			//PROTOCOL_SetBindState(0);
 			//oled->print_6x8Str(0,2,"Bind End");
-			printf("Bind End\n");
+			SEGGER_RTT_printf(0,"Bind End\n");
 		}
 		else
 		{
@@ -333,7 +334,7 @@ void DEVO_BuildPacket()
 			{
 				//TOTO:PROTOCOL_SetBindState(0);
 				//oled->print_6x8Str(0,3,"Bind End in DEVO_BOUND");
-				printf("Bind End in DEVO_BOUND\n");
+				SEGGER_RTT_printf(0,"Bind End in DEVO_BOUND\n");
 			}
 		}
 		break;
@@ -352,7 +353,7 @@ void DEVO_BuildPacket()
 
 void DEVO_Initialize()
 {
-	printf("-- begin DEVO_Initialize --\n");
+	SEGGER_RTT_printf(0,"-- begin DEVO_Initialize --\n");
 	CLOCK_StopTimer();
 	//CYRF=new CYRF6936(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
 	CYRF=new CYRF6936(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1);
@@ -364,12 +365,12 @@ void DEVO_Initialize()
 	if(r!=0x2A)
 	{
 		//oled->print_6x8Str(0,0,"cyrf6936 fail!!");
-		printf("cyrf6936 fail!!");
+		SEGGER_RTT_printf(0,"cyrf6936 fail!!");
 		while(true);
 	}
 	CYRF->Init();
 	CYRF->GetMfgData(cyrfmfg_id);
-	printf("MFG=%02X %02X %02X %02X %02X %02X\n",
+	SEGGER_RTT_printf(0,"MFG=%02X %02X %02X %02X %02X %02X\n",
 			cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
 	//oled->print_6x8Str(0,0,buf);
 
@@ -378,7 +379,7 @@ void DEVO_Initialize()
 	CYRF->ConfigSOPCode(sopcodes[0]);
 	set_radio_channels();
 
-	printf("CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
+	SEGGER_RTT_printf(0,"CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
 	//oled->print_6x8Str(0,1,buf);
 
 	use_fixed_id = 0;
@@ -401,9 +402,9 @@ void DEVO_Initialize()
 	state = DEVO_BIND;
 	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
 
-	u8 d;
-	d=CYRF->ReadRegister(CYRF_0C_XTAL_CTRL);
-	printf("XTAL_CTRL=%02X\n",d);
+	//u8 d;
+	//d=CYRF->ReadRegister(CYRF_0C_XTAL_CTRL);
+	//SEGGER_RTT_printf(0,"XTAL_CTRL=%02X\n",d);
 	//oled->print_6x8Str(0,6,buf);
 	CLOCK_StartTimer(2400, DEVO_Callback);
 
@@ -417,7 +418,7 @@ const char bind_state[][16]={
 u16 DEVO_Callback()
 {
 	//char buf[12];
-	//printf("%s",bind_state[state>2?2:state]);
+	//SEGGER_RTT_printf(0,"%s",bind_state[state>2?2:state]);
 	//oled->print_6x8Str(0,4,bind_state[state>2?2:state]);
 	if (txState == 0)
 	{
@@ -433,11 +434,11 @@ u16 DEVO_Callback()
 	u8 IRQ_STATUS = 0;
 	while (!((IRQ_STATUS = CYRF->ReadRegister(CYRF_04_TX_IRQ_STATUS)) & 0x02))
 	{
-		printf("IRQ_STATUS=%0X\n",IRQ_STATUS);
-        if(++i > NUM_WAIT_LOOPS)
-            return 1200;//如果发送失败1200us后重新发送
+		SEGGER_RTT_printf(0,"IRQ_STATUS=%02X\n",IRQ_STATUS);
+		if(++i > NUM_WAIT_LOOPS)
+			return 1200;//如果发送失败1200us后重新发送
 	}
-		printf("IRQ_STATUS=%04X\n",IRQ_STATUS);
+	SEGGER_RTT_printf(0,"IRQ_STATUS=%02X\n",IRQ_STATUS);
 	if (state == DEVO_BOUND)//已经绑定成功
 	{
 		/* exit binding state */

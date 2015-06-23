@@ -55,7 +55,7 @@ Purpose : Implementation of SEGGER real-time terminal which allows
 // especially when RTT functions are not called at the beginning of execution,
 // SEGGER_RTT_Init() should be called at the start of the application.
 //
-#define SEGGER_RTT_IN_RAM                         (0)
+#define SEGGER_RTT_IN_RAM                         (1)
 
 /*************************** End of file ****************************/
 #ifdef __cplusplus

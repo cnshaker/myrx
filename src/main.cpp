@@ -5,6 +5,7 @@
 #include "OLED.h"
 #include "Timx.h"
 #include "devo.h"
+#include "SEGGER_RTT.h"
 
 void Init_SPI(void)
 {
@@ -52,6 +53,9 @@ void Init_SPI(void)
 
 int main(int argc, char* argv[])
 {
+	//SEGGER_RTT_printf(0,"starting..\n");
+	SEGGER_RTT_Init();
+	printf("starting...\n");
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	Init_SPI();
@@ -77,10 +81,10 @@ int main(int argc, char* argv[])
 	GPIO_ResetBits(GPIOA, GPIO_Pin_8);
 	
 	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_0;
 	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOB, GPIO_Pin_12);
+	GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_0);
 
 	//PC13 for led
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
@@ -88,10 +92,10 @@ int main(int argc, char* argv[])
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	OLED oled_object(GPIO_Pin(GPIOA,GPIO_Pin_1),GPIO_Pin(GPIOA,GPIO_Pin_2));
-	oled=&oled_object;
-	oled->Init();
-	oled->CLS();
+	//OLED oled_object(GPIO_Pin(GPIOA,GPIO_Pin_1),GPIO_Pin(GPIOA,GPIO_Pin_2));
+	//oled=&oled_object;
+	//oled->Init();
+	//oled->CLS();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	TIM3_Int_Init(5000-1,7200-1);//10Khz的计数频率
 	

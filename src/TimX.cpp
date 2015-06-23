@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "TimX.h"
 #include "oled.h"
+#include "SEGGER_RTT.h"
 
 //通用定时器3中断初始化
 //这里时钟选择为APB1的2倍，而APB1为36M
@@ -53,11 +54,10 @@ extern "C" void TIM3_IRQHandler(void) //TIM3中断
 		else
 		{
 			GPIO_SetBits(GPIOC, GPIO_Pin_13);
-			char buf[8];
+			//char buf[8];
 			ttt++;
-			sprintf(buf,"%d",ttt);
-			oled->print_6x8Str(0,7,buf);
-
+			//printf("%d",ttt);
+			//oled->print_6x8Str(0,7,buf);
 		}
 	}
 }

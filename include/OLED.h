@@ -76,6 +76,6 @@ private:
 	}
 };
 
-extern OLED *oled;
+//extern OLED *oled;
 
 #endif

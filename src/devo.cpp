@@ -105,11 +105,11 @@ static void build_beacon_pkt(int upper)
     packet[0] = ((num_channels << 4) | 0x07);
     u8 enable = 0;
     int max = 8;
-    int offset = 0;
+    //int offset = 0;
     if (upper) {
         packet[0] += 1;
         max = 4;
-        offset = 8;
+        //offset = 8;
     }
     for(int i = 0; i < max; i++) {
         //if (i + offset < Model.num_channels && Model.limits[i+offset].flags & CH_FAILSAFE_EN) {
@@ -304,7 +304,8 @@ void DEVO_BuildPacket()
 		{
 			state = DEVO_BOUND;
 			//PROTOCOL_SetBindState(0);
-			oled->print_6x8Str(0,2,"Bind End");
+			//oled->print_6x8Str(0,2,"Bind End");
+			printf("Bind End\n");
 		}
 		else
 		{
@@ -331,7 +332,8 @@ void DEVO_BuildPacket()
 			if (bind_counter == 0)
 			{
 				//TOTO:PROTOCOL_SetBindState(0);
-				oled->print_6x8Str(0,3,"Bind End in DEVO_BOUND");
+				//oled->print_6x8Str(0,3,"Bind End in DEVO_BOUND");
+				printf("Bind End in DEVO_BOUND\n");
 			}
 		}
 		break;
@@ -350,31 +352,34 @@ void DEVO_BuildPacket()
 
 void DEVO_Initialize()
 {
+	printf("-- begin DEVO_Initialize --\n");
 	CLOCK_StopTimer();
-	CYRF=new CYRF6936(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
-	char buf[32];
+	//CYRF=new CYRF6936(GPIO_Pin(GPIOB,GPIO_Pin_12),GPIO_Pin(GPIOA,GPIO_Pin_8),SPI2);
+	CYRF=new CYRF6936(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1);
+	//char buf[32];
 	CYRF->CS_HI();
 	CYRF->Reset();
 	CYRF->WriteRegister(0x1,0x2A);
 	u8 r=CYRF->ReadRegister(0x1);
 	if(r!=0x2A)
 	{
-		oled->print_6x8Str(0,0,"cyrf6936 fail!!");
+		//oled->print_6x8Str(0,0,"cyrf6936 fail!!");
+		printf("cyrf6936 fail!!");
 		while(true);
 	}
 	CYRF->Init();
 	CYRF->GetMfgData(cyrfmfg_id);
-	sprintf(buf,"MFG=%02X %02X %02X %02X %02X %02X",
+	printf("MFG=%02X %02X %02X %02X %02X %02X\n",
 			cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
-	oled->print_6x8Str(0,0,buf);
+	//oled->print_6x8Str(0,0,buf);
 
 	CYRF->ConfigRxTx(1);
 	CYRF->ConfigCRCSeed(0x0000);
 	CYRF->ConfigSOPCode(sopcodes[0]);
 	set_radio_channels();
 
-	sprintf(buf,"CHN=%d %d %d",radio_ch[0],radio_ch[1],radio_ch[2]);
-	oled->print_6x8Str(0,1,buf);
+	printf("CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
+	//oled->print_6x8Str(0,1,buf);
 
 	use_fixed_id = 0;
 	failsafe_pkt = 0;
@@ -398,8 +403,8 @@ void DEVO_Initialize()
 
 	u8 d;
 	d=CYRF->ReadRegister(CYRF_0C_XTAL_CTRL);
-	sprintf(buf,"XTAL_CTRL=%02X",d);
-	oled->print_6x8Str(0,6,buf);
+	printf("XTAL_CTRL=%02X\n",d);
+	//oled->print_6x8Str(0,6,buf);
 	CLOCK_StartTimer(2400, DEVO_Callback);
 
 }
@@ -412,8 +417,8 @@ const char bind_state[][16]={
 u16 DEVO_Callback()
 {
 	//char buf[12];
-	//sprintf(buf,"%s",bind_state[state>2?2:state]);
-	oled->print_6x8Str(0,4,bind_state[state>2?2:state]);
+	//printf("%s",bind_state[state>2?2:state]);
+	//oled->print_6x8Str(0,4,bind_state[state>2?2:state]);
 	if (txState == 0)
 	{
 		//发送数据包
@@ -428,9 +433,11 @@ u16 DEVO_Callback()
 	u8 IRQ_STATUS = 0;
 	while (!((IRQ_STATUS = CYRF->ReadRegister(CYRF_04_TX_IRQ_STATUS)) & 0x02))
 	{
+		printf("IRQ_STATUS=%0X\n",IRQ_STATUS);
         if(++i > NUM_WAIT_LOOPS)
             return 1200;//如果发送失败1200us后重新发送
 	}
+		printf("IRQ_STATUS=%04X\n",IRQ_STATUS);
 	if (state == DEVO_BOUND)//已经绑定成功
 	{
 		/* exit binding state */

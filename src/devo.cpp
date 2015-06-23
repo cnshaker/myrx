@@ -423,13 +423,25 @@ u16 DEVO_Callback()
 	int i = 0;
 	//检查发送状态
 	u8 IRQ_STATUS = 0;
-	while (!((IRQ_STATUS = CYRF->ReadRegister(CYRF_04_TX_IRQ_STATUS)) & 0x02))
+	while (true)
 	{
-		SEGGER_RTT_printf(0,"IRQ_STATUS=%02X\n",IRQ_STATUS);
+		//first read
+		IRQ_STATUS = CYRF->ReadRegister(TX_IRQ_STATUS_ADR);
+		if((IRQ_STATUS&(TXC_IRQ|TXBERR_IRQ|TXE_IRQ))==TXC_IRQ)
+		{
+			//second read
+			IRQ_STATUS = CYRF->ReadRegister(TX_IRQ_STATUS_ADR);
+			if((IRQ_STATUS&TXE_IRQ)==0)
+			{
+				//Successful Transactions
+				break;
+			}
+		}
 		if(++i > NUM_WAIT_LOOPS)
 			return 1200;//如果发送失败1200us后重新发送
 	}
-	SEGGER_RTT_printf(0,"IRQ_STATUS=%02X\n",IRQ_STATUS);
+	i=CYRF->ReadRegister(TX_LENGTH_ADR);
+	SEGGER_RTT_printf(0,"Successful Transactions\n");
 	if (state == DEVO_BOUND)//已经绑定成功
 	{
 		/* exit binding state */

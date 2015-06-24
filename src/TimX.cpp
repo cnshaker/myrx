@@ -8,7 +8,6 @@
 #include <stm32f10x_tim.h>
 #include <stdio.h>
 #include "TimX.h"
-#include "oled.h"
 #include "SEGGER_RTT.h"
 
 //通用定时器3中断初始化

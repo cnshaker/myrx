@@ -6,7 +6,6 @@
 #include "delay.h"
 #include "cyrf.h"
 #include "devo.h"
-#include "oled.h"
 #include "timx.h"
 #include "segger_rtt.h"
 
@@ -401,16 +400,9 @@ void DEVO_Initialize()
 	CLOCK_StartTimer(2400, DEVO_Callback);
 
 }
-const char bind_state[][16]={
-"B  ",
-" S ",
-"  E",
-};
 
 u16 DEVO_Callback()
 {
-	//SEGGER_RTT_printf(0,"%s",bind_state[state>2?2:state]);
-
 	if (txState == 0)
 	{
 		//发送数据包

@@ -422,11 +422,6 @@
               <FilePath>.\src\main.cpp</FilePath>
             </File>
             <File>
-              <FileName>OLED.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>.\src\OLED.cpp</FilePath>
-            </File>
-            <File>
               <FileName>CYRF.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>.\src\CYRF.cpp</FilePath>
@@ -480,11 +475,6 @@
               <FileName>main.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\include\main.h</FilePath>
-            </File>
-            <File>
-              <FileName>OLED.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\include\OLED.h</FilePath>
             </File>
             <File>
               <FileName>TimX.h</FileName>

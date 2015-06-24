@@ -2,7 +2,6 @@
 #include <stm32f10x.h>
 #include <stm32f10x_spi.h>
 #include "delay.h"
-#include "OLED.h"
 #include "Timx.h"
 #include "cyrf.h"
 #include "devo.h"

@@ -361,7 +361,7 @@ void DEVO_Initialize()
 	u8 r=CYRF->ReadRegister(TX_LENGTH_ADR);
 	if(r!=0x2A)
 	{
-		SEGGER_RTT_printf(0,"cyrf6936 fail!!");
+		SEGGER_RTT_printf(0,"cyrf6936 fail!!\n");
 		while(true);
 	}
 	CYRF->Init();
@@ -433,7 +433,7 @@ u16 DEVO_Callback()
 			return 1200;//如果发送失败1200us后重新发送
 	}
 	i=CYRF->ReadRegister(TX_LENGTH_ADR);
-	SEGGER_RTT_printf(0,"Successful Transactions\n");
+	//SEGGER_RTT_printf(0,"Successful Transactions\n");
 	if (state == DEVO_BOUND)//已经绑定成功
 	{
 		/* exit binding state */

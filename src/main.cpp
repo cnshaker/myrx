@@ -54,7 +54,7 @@ void Init_SPI(void)
 int main(int argc, char* argv[])
 {
 	SEGGER_RTT_Init();
-	SEGGER_RTT_printf(0,"starting...\n");
+	SEGGER_RTT_printf(0,"\n\nstarting...\n");
 	GPIO_InitTypeDef GPIO_InitStructure;
 
 	Init_SPI();

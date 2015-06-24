@@ -18,3 +18,7 @@
 /Objects
 /Debug
 /Release
+*.ini
+*.txt
+*.uvoptx
+*.uvguix.*

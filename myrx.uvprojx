@@ -452,11 +452,6 @@
           <GroupName>Include</GroupName>
           <Files>
             <File>
-              <FileName>codetab.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\include\codetab.h</FilePath>
-            </File>
-            <File>
               <FileName>CYRF.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\include\CYRF.h</FilePath>

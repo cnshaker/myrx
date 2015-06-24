@@ -95,26 +95,26 @@ void CYRF6936::ConfigRxTx(u32 TxRx)
 
 void CYRF6936::ConfigCRCSeed(u16 crc)
 {
-	WriteRegister(CYRF_15_CRC_SEED_LSB, crc & 0xff);
-	WriteRegister(CYRF_16_CRC_SEED_MSB, crc >> 8);
+	WriteRegister(CRC_SEED_LSB_ADR, crc & 0xff);
+	WriteRegister(CRC_SEED_MSB_ADR, crc >> 8);
 }
 
 void CYRF6936::ConfigSOPCode(const u8 *sopcodes)
 {
 
-	WriteRegisterMulti(CYRF_22_SOP_CODE, sopcodes, 8);
+	WriteRegisterMulti(SOP_CODE_ADR, sopcodes, 8);
 }
 
 void CYRF6936::ConfigDataCode(const u8 *datacodes, u8 len)
 {
 
-	WriteRegisterMulti(CYRF_23_DATA_CODE, datacodes, len);
+	WriteRegisterMulti(DATA_CODE_ADR, datacodes, len);
 }
 
 void CYRF6936::WritePreamble(unsigned long preamble)
 {
 	CS_LO();
-	transfer((CYRF_ADR_MASK & CYRF_24_PREAMBLE) | CYRF_WRITE);
+	transfer((CYRF_ADR_MASK & PREAMBLE_ADR) | CYRF_WRITE);
 	transfer(preamble & 0xff);
 	transfer((preamble >> 8) & 0xff);
 	transfer((preamble >> 16) & 0xff);

@@ -10,9 +10,7 @@
 void Init_SPI(void)
 {
 	/* Enable GPIOA and SPI1 clocks */
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_SPI1, ENABLE);
-	/* Enable SPI2 clocks */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_SPI1, ENABLE);
 	/* SPI1: SCK, MOSI */
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
@@ -24,16 +22,6 @@ void Init_SPI(void)
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	/* SPI2: SCK, MOSI */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13 | GPIO_Pin_15;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	/* SPI2: MISO */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 	SPI_InitTypeDef SPI_InitStructure;
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
@@ -47,8 +35,6 @@ void Init_SPI(void)
 	SPI_InitStructure.SPI_CRCPolynomial = 7;
 	SPI_Init(SPI1, &SPI_InitStructure);
 	SPI_Cmd(SPI1, ENABLE);
-	SPI_Init(SPI2, &SPI_InitStructure);
-	SPI_Cmd(SPI2, ENABLE);
 }
 
 int main(int argc, char* argv[])
@@ -62,28 +48,20 @@ int main(int argc, char* argv[])
 
 	//PC13 for led
 	
-	//PA1  for oled's chip select
-	//PA2  for oled's data/command
+	//PA4  for cyrf6936's chip select
+	//PB0  for cyrf's reset
 	
-	//PA3  for 1st cyrf6936's chip select
-	//PA4  for 1st cyrf's reset
-	
-	//PB12 for 2nd cyrf6936's chip select
-	//PA8  for 2nd cyrf's reset
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_8;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOA, GPIO_Pin_1 | GPIO_Pin_3);
-	GPIO_ResetBits(GPIOA, GPIO_Pin_8);
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 	
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_0;
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOB, GPIO_Pin_12 | GPIO_Pin_0);
+	GPIO_SetBits(GPIOB, GPIO_Pin_0);
 
 	//PC13 for led
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
@@ -91,10 +69,6 @@ int main(int argc, char* argv[])
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	//OLED oled_object(GPIO_Pin(GPIOA,GPIO_Pin_1),GPIO_Pin(GPIOA,GPIO_Pin_2));
-	//oled=&oled_object;
-	//oled->Init();
-	//oled->CLS();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
 	TIM3_Int_Init(5000-1,7200-1);//10Khz的计数频率
 	

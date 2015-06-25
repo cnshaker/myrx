@@ -133,9 +133,9 @@ void CYRF6936::Init()
 	WriteRegister(FRAMING_CFG_ADR, SOP_EN|LEN_EN|0x04);
 	WriteRegister(DATA32_THOLD_ADR, 0x05);
 	WriteRegister(DATA64_THOLD_ADR, 0x0E);
-	WriteRegister(CYRF_1B_TX_OFFSET_LSB, 0x55);
-	WriteRegister(CYRF_1C_TX_OFFSET_MSB, 0x05);
-	WriteRegister(CYRF_32_AUTO_CAL_TIME, 0x3C);
+	WriteRegister(TX_OFFSET_LSB_ADR, 0x55);
+	WriteRegister(TX_OFFSET_MSB_ADR, 0x05);
+	WriteRegister(AUTO_CAL_TIME_ADR, AUTO_CAL_TIME_MAX);
 	WriteRegister(CYRF_35_AUTOCAL_OFFSET, 0x14);
 	WriteRegister(CYRF_39_ANALOG_CTRL, 0x01);
 	WriteRegister(CYRF_1E_RX_OVERRIDE, 0x10);

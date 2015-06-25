@@ -365,6 +365,7 @@ void DEVO_Initialize()
 		while(true);
 	}
 	CYRF->Init();
+	CYRF->ConfigCRCSeed(0xFDFD);
 	CYRF->GetMfgData(cyrfmfg_id);
 	SEGGER_RTT_printf(0,"MFG=%02X %02X %02X %02X %02X %02X\n",
 			cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);

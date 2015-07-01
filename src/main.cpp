@@ -48,17 +48,24 @@ int main(int argc, char* argv[])
 
 	//PC13 for led
 	
-	//PA4  for cyrf6936's chip select
-	//PB0  for cyrf's reset
+	//cyrf6936's GPIO
+	//PA4 for NSS
+	//PA5 for SCK
+	//PA6 for MISO
+	//PA7 for MOSI
+	//PB0 for RST
 	
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	
+	//PA4
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 	
+	//PB0
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	GPIO_SetBits(GPIOB, GPIO_Pin_0);

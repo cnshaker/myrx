@@ -166,103 +166,6 @@ static void build_data_pkt()
     add_pkt_suffix();
 }
 
-//static s32 float_to_int(u8 *ptr)
-//{
-//    s32 value = 0;
-//    int seen_decimal = 0;
-//    for(int i = 0; i < 7; i++) {
-//        if(ptr[i] == '.') {
-//            value *= 1000;
-//            seen_decimal = 100;
-//            continue;
-//        }
-//        if(ptr[i] == 0)
-//            break;
-//        if(seen_decimal) {
-//            value += (ptr[i] - '0') * seen_decimal;
-//            seen_decimal /= 10;
-//            if(! seen_decimal)
-//                break;
-//        } else {
-//            value = value * 10 + (ptr[i] - '0');
-//        }
-//    }
-//    return value;
-//}
-//static void parse_telemetry_packet(u8 *packet)
-//{
-//    if((packet[0] & 0xF0) != 0x30)
-//        return;
-//    scramble_pkt(); //This will unscramble the packet
-//    //if (packet[0] < 0x37) {
-//    //    memcpy(Telemetry.line[packet[0]-0x30], packet+1, 12);
-//    //}
-//    if (packet[0] == TELEMETRY_ENABLE) {
-//        Telemetry.volt[0] = packet[1]; //In 1/10 of Volts
-//        Telemetry.volt[1] = packet[3]; //In 1/10 of Volts
-//        Telemetry.volt[2] = packet[5]; //In 1/10 of Volts
-//        Telemetry.rpm[0]  = packet[7] * 120; //In RPM
-//        Telemetry.rpm[1]  = packet[9] * 120; //In RPM
-//        Telemetry.time[0] = CLOCK_getms();
-//    }
-//    if (packet[0] == 0x31) {
-//        Telemetry.temp[0] = packet[1] == 0xff ? 0 : packet[1] - 20; //In degrees-C
-//        Telemetry.temp[1] = packet[2] == 0xff ? 0 : packet[2] - 20; //In degrees-C
-//        Telemetry.temp[2] = packet[3] == 0xff ? 0 : packet[3] - 20; //In degrees-C
-//        Telemetry.temp[3] = packet[4] == 0xff ? 0 : packet[4] - 20; //In degrees-C
-//        Telemetry.time[1] = CLOCK_getms();
-//    }
-//    /* GPS Data
-//       32: 30333032302e3832373045fb  = 030掳20.8270E
-//       33: 353935342e373737364e0700  = 59掳54.776N
-//       34: 31322e380000004d4d4e45fb  = 12.8 MMNE (altitude maybe)?
-//       35: 000000000000302e30300000  = 0.00 (probably speed)
-//       36: 313832353532313531303132  = 2012-10-15 18:25:52 (UTC)
-//    */
-//    if (packet[0] == 0x32) {
-//        Telemetry.time[2] = CLOCK_getms();
-//        Telemetry.gps.longitude = ((packet[1]-'0') * 100 + (packet[2]-'0') * 10 + (packet[3]-'0')) * 3600000
-//                                  + ((packet[4]-'0') * 10 + (packet[5]-'0')) * 60000
-//                                  + ((packet[7]-'0') * 1000 + (packet[8]-'0') * 100
-//                                     + (packet[9]-'0') * 10 + (packet[10]-'0')) * 6;
-//        if (packet[11] == 'W')
-//            Telemetry.gps.longitude *= -1;
-//    }
-//    if (packet[0] == 0x33) {
-//        Telemetry.time[2] = CLOCK_getms();
-//        Telemetry.gps.latitude = ((packet[1]-'0') * 10 + (packet[2]-'0')) * 3600000
-//                                  + ((packet[3]-'0') * 10 + (packet[4]-'0')) * 60000
-//                                  + ((packet[6]-'0') * 1000 + (packet[7]-'0') * 100
-//                                     + (packet[8]-'0') * 10 + (packet[9]-'0')) * 6;
-//        if (packet[10] == 'S')
-//            Telemetry.gps.latitude *= -1;
-//    }
-//    if (packet[0] == 0x34) {
-//        Telemetry.time[2] = CLOCK_getms();
-//        Telemetry.gps.altitude = float_to_int(packet+1);
-//    }
-//    if (packet[0] == 0x35) {
-//        Telemetry.time[2] = CLOCK_getms();
-//        Telemetry.gps.velocity = float_to_int(packet+7);
-//    }
-//    if (packet[0] == 0x36) {
-//        Telemetry.time[2] = CLOCK_getms();
-//        u8 hour  = (packet[1]-'0') * 10 + (packet[2]-'0');
-//        u8 min   = (packet[3]-'0') * 10 + (packet[4]-'0');
-//        u8 sec   = (packet[5]-'0') * 10 + (packet[6]-'0');
-//        u8 day   = (packet[7]-'0') * 10 + (packet[8]-'0');
-//        u8 month = (packet[9]-'0') * 10 + (packet[10]-'0');
-//        u8 year  = (packet[11]-'0') * 10 + (packet[12]-'0'); // + 2000
-//        Telemetry.gps.time = ((year & 0x3F) << 26)
-//                           | ((month & 0x0F) << 22)
-//                           | ((day & 0x1F) << 17)
-//                           | ((hour & 0x1F) << 12)
-//                           | ((min & 0x3F) << 6)
-//                           | ((sec & 0x3F) << 0);
-//    }
-//
-//}
-
 static void cyrf_set_bound_sop_code()
 {
     /* crc == 0 isn't allowed, so use 1 if the math results in 0 */
@@ -352,7 +255,7 @@ void DEVO_BuildPacket()
 
 void DEVO_Initialize()
 {
-	SEGGER_RTT_printf(0,"-- begin DEVO_Initialize --\n");
+	SEGGER_RTT_printf(0,"---- begin DEVO_Initialize ----\n");
 	CLOCK_StopTimer();
 	CYRF=new CYRF6936(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1);
 	CYRF->CS_HI();

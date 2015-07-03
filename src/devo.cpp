@@ -301,12 +301,29 @@ void DEVO_Initialize()
 	state = DEVO_BIND;
 	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
 
+	CYRF->ConfigRFChannel(0);
+	CYRF->ConfigCRCSeed(0);
+	CYRF->ConfigSOPCode(sopcodes[0]);
+	CYRF->ConfigRxTx(0);
+	CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
+	CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
+	CYRF->WriteRegister(RX_IRQ_STATUS_ADR,0);
 	CLOCK_StartTimer(2400, DEVO_Callback);
 
 }
 
 u16 DEVO_Callback()
 {
+	u8 RX_IRQ_STATUS=CYRF->ReadRegister(RX_IRQ_STATUS_ADR);
+	u8 RX_STATUS=CYRF->ReadRegister(RX_STATUS_ADR);
+	if((RX_IRQ_STATUS&(RXC_IRQ|RXE_IRQ))==RXC_IRQ)
+	{
+		SEGGER_RTT_printf(0,"good recv! IRQ=%02X\n",RX_IRQ_STATUS);
+		CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
+		CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
+		CYRF->WriteRegister(RX_IRQ_STATUS_ADR,0);
+	}
+	return 240;
 	if (txState == 0)
 	{
 		//发送数据包

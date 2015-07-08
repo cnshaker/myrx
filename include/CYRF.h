@@ -642,7 +642,7 @@ public:
 
 	inline u8 transfer(u8 byt)
 	{
-		while (!(spix->SR & SPI_SR_TXE));
+		//while (!(spix->SR & SPI_SR_TXE));
 		spix->DR = byt;
 		while (!(spix->SR & SPI_SR_RXNE));
 		return spix->DR;

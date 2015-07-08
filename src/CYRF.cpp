@@ -183,7 +183,7 @@ u8 channel;
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
 
-	//SEGGER_RTT_printf(0,"Channel=%d\n",ch);
+	SEGGER_RTT_printf(0,"Channel=%d\n",ch);
 
 	channel=ch;
 	WriteRegister(CYRF_00_CHANNEL, ch);
@@ -240,7 +240,7 @@ void CYRF6936::FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min,
 
 void CYRF6936::ReadDataPacket(u8 dpbuffer[])
 {
-	ReadRegisterMulti(CYRF_21_RX_BUFFER, dpbuffer, 0x10);
+	ReadRegisterMulti(RX_BUFFER_ADR, dpbuffer, 0x10);
 }
 
 void CYRF6936::WriteDataPacketLen(const u8 dpbuffer[], u8 len)

@@ -275,11 +275,10 @@ void DEVO_Initialize()
 
 	CYRF->ConfigRxTx(1);
 	CYRF->ConfigCRCSeed(0x0000);
-	CYRF->ConfigSOPCode(sopcodes[0]);
+	//CYRF->ConfigSOPCode(sopcodes[0]);
 	set_radio_channels();
 
 	SEGGER_RTT_printf(0,"CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
-	//oled->print_6x8Str(0,1,buf);
 
 	use_fixed_id = 0;
 	failsafe_pkt = 0;
@@ -315,13 +314,17 @@ void DEVO_Initialize()
 u16 DEVO_Callback()
 {
 	u8 RX_IRQ_STATUS=CYRF->ReadRegister(RX_IRQ_STATUS_ADR);
-	u8 RX_STATUS=CYRF->ReadRegister(RX_STATUS_ADR);
 	if((RX_IRQ_STATUS&(RXC_IRQ|RXE_IRQ))==RXC_IRQ)
 	{
-		SEGGER_RTT_printf(0,"good recv! IRQ=%02X\n",RX_IRQ_STATUS);
+		//SEGGER_RTT_printf(0,"good recv! IRQ=%02X\n",RX_IRQ_STATUS);
+		u8 pac[16];
+		CYRF->ReadDataPacket(pac);
+		RX_IRQ_STATUS=CYRF->ReadRegister(RX_IRQ_STATUS_ADR);
+		SEGGER_RTT_printf(0,"%s\t0X%02X\n",pac,RX_IRQ_STATUS);
+		u8 RX_STATUS=CYRF->ReadRegister(RX_STATUS_ADR);
 		CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
 		CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
-		CYRF->WriteRegister(RX_IRQ_STATUS_ADR,0);
+		//CYRF->WriteRegister(RX_IRQ_STATUS_ADR,0);
 	}
 	return 240;
 	if (txState == 0)

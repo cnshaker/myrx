@@ -26,6 +26,8 @@ enum LED_Flash_Type
 	Initing,
 	Working,
 	CYRF_Fail,
+	RF_Bound,
+	RF_Lost,
 };
 void SetLED(LED_Flash_Type);
 #endif

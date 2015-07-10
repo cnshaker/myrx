@@ -110,10 +110,29 @@ u16 DEVO::ProcessPacket(u8 pac[])
 				;
 		}
 		RFStatus = Bound;
+		SetLED(RF_Bound);
 		break;
 	case 0xb:
 	case 0xc: //数据包
 		scramble_pkt(pac);
+		fixed_id = ((*((u32*) (&pac[13]))) ^ transmitter_id) & 0xffffff;
+		switch (pac[10] & 0xf0)
+		{
+		case 0x80:
+		case 0xc0:
+			use_fixed_id = true;
+			break;
+		case 0x00:
+			use_fixed_id = false;
+			break;
+		default:
+			while (1)
+				;
+		}
+		channel_packets = pac[10] & 0xf;
+		if (chns[chns_idx+1] != pac[11] || chns[chns_idx+2] != pac[12])
+					while (1)
+						;
 		break;
 	}
 
@@ -139,6 +158,7 @@ u16 DEVO::Callback()
 		ProcessPacket(pac); // 处理包
 		if(RFStatus==Bound)//成功Bind
 		{
+			ChannelRetry=0;
 			if(channel_packets==0)
 			{
 				chns_idx=chns_idx<2?chns_idx+1:0;
@@ -151,15 +171,31 @@ u16 DEVO::Callback()
 	}
 	//没有包到达 或包不是bind包
 	ChannelRetry++;
-	if (ChannelRetry > 13) // 每个频道尝试13次
+	if (ChannelRetry >= 13) // 每个频道尝试13次 约2.6ms
 	{
-		ChannelRetry=0;
-		RFChannel=RFChannel>=0x4f?0x4:RFChannel+1;//循环0x4-0x4F频道
+		ChannelRetry = 0;
+		switch (RFStatus)
+		{
+		case Bound:
+			RFStatus = Lost; //Tx包应该2.4ms一次
+			SetLED(RF_Lost);
+			while (1)
+				;
+			break;
+		case Binding:
+			RFChannel = RFChannel >= 0x4f ? 0x4 : RFChannel + 1; //循环0x4-0x4F频道
+			CYRF.ConfigRFChannel(RFChannel);
+			need_reset_rx=true;
+			break;
+		}
 
-		CYRF.ConfigRFChannel(RFChannel);
 	}
-	CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
-	CYRF.WriteRegister(RX_CTRL_ADR, RX_CTRL_RST | RX_GO);
+	if (need_reset_rx)
+	{
+		CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
+		CYRF.WriteRegister(RX_CTRL_ADR, RX_CTRL_RST | RX_GO);
+	}
 	return 200;
+
 }
 

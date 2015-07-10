@@ -78,8 +78,10 @@ void SetLED(LED_Flash_Type t)
 	switch(t)
 	{
 		case Initing: led_fast_flash=1000;led_slow_flash=0;break;
-		case Working: led_fast_flash=2;led_slow_flash=0;break;
+		case Working: led_fast_flash=1;led_slow_flash=0;break;
 		case CYRF_Fail: led_fast_flash=2;led_slow_flash=1;break;
+		case RF_Bound: led_fast_flash=2;led_slow_flash=0;break;
+		case RF_Lost: led_fast_flash=3;led_slow_flash=1;break;
 	}
 }
 

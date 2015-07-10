@@ -19,4 +19,13 @@ public:
 	}
 };
 
+extern int led_fast_flash, led_slow_flash;
+
+enum LED_Flash_Type
+{
+	Initing,
+	Working,
+	CYRF_Fail,
+};
+void SetLED(LED_Flash_Type);
 #endif

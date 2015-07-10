@@ -253,7 +253,7 @@ void DEVO_BuildPacket()
 		pkt_num = 0;
 }
 
-void DEVO_Initialize()
+void Init_DEVO()
 {
 	SEGGER_RTT_printf(0,"---- begin DEVO_Initialize ----\n");
 	CLOCK_StopTimer();
@@ -265,43 +265,44 @@ void DEVO_Initialize()
 	if(r!=0x2A)
 	{
 		SEGGER_RTT_printf(0,"cyrf6936 fail!!\n");
+		SetLED(CYRF_Fail);
 		while(true);
 	}
 	CYRF->Init();
-	CYRF->ConfigCRCSeed(0xFDFD);
-	CYRF->GetMfgData(cyrfmfg_id);
-	SEGGER_RTT_printf(0,"MFG=%02X %02X %02X %02X %02X %02X\n",
-			cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
+	//CYRF->ConfigCRCSeed(0xFDFD);
+	//CYRF->GetMfgData(cyrfmfg_id);
+	//SEGGER_RTT_printf(0,"MFG=%02X %02X %02X %02X %02X %02X\n",
+	//		cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
 
-	CYRF->ConfigRxTx(1);
-	CYRF->ConfigCRCSeed(0x0000);
+	//CYRF->ConfigRxTx(1);
+	//CYRF->ConfigCRCSeed(0x0000);
 	//CYRF->ConfigSOPCode(sopcodes[0]);
-	set_radio_channels();
+	//set_radio_channels();
 
-	SEGGER_RTT_printf(0,"CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
+	//SEGGER_RTT_printf(0,"CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
 
-	use_fixed_id = 0;
-	failsafe_pkt = 0;
-	radio_ch_ptr = radio_ch;
-	CYRF->ConfigRFChannel(*radio_ch_ptr);
+	//use_fixed_id = 0;
+	//failsafe_pkt = 0;
+	//radio_ch_ptr = radio_ch;
+	//CYRF->ConfigRFChannel(*radio_ch_ptr);
 	//num_channels = ((Model.num_channels + 3) >> 2) * 4;
-	num_channels = (8 + 3)&0xfc; //8ͨ通道
-	pkt_num = 0;
-	ch_idx = 0;
-	txState = 0;
+	//num_channels = (8 + 3)&0xfc; //8ͨ通道
+	//pkt_num = 0;
+	//ch_idx = 0;
+	//txState = 0;
 
 	//伪随机
-	fixed_id = ((u32) (radio_ch[0] ^ cyrfmfg_id[0] ^ cyrfmfg_id[3]) << 16)
-			| ((u32) (radio_ch[1] ^ cyrfmfg_id[1] ^ cyrfmfg_id[4]) << 8)
-			| ((u32) (radio_ch[2] ^ cyrfmfg_id[2] ^ cyrfmfg_id[5]) << 0);
+	//fixed_id = ((u32) (radio_ch[0] ^ cyrfmfg_id[0] ^ cyrfmfg_id[3]) << 16)
+	//		| ((u32) (radio_ch[1] ^ cyrfmfg_id[1] ^ cyrfmfg_id[4]) << 8)
+	//		| ((u32) (radio_ch[2] ^ cyrfmfg_id[2] ^ cyrfmfg_id[5]) << 0);
 	//取模
-	fixed_id = fixed_id % 1000000;
-	bind_counter = BIND_COUNT;
-	state = DEVO_BIND;
+	//fixed_id = fixed_id % 1000000;
+	//bind_counter = BIND_COUNT;
+	//state = DEVO_BIND;
 	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
 
 	CYRF->ConfigRFChannel(0);
-	CYRF->ConfigCRCSeed(0);
+	CYRF->ConfigCRCSeed(0xfdfd);
 	CYRF->ConfigSOPCode(sopcodes[0]);
 	CYRF->ConfigRxTx(0);
 	CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);

@@ -9,13 +9,15 @@
 #include <stdio.h>
 #include "TimX.h"
 #include "SEGGER_RTT.h"
+#include "main.h"
 
+int flash_step;
 //通用定时器3中断初始化
 //这里时钟选择为APB1的2倍，而APB1为36M
 //arr：自动重装值。
 //psc：时钟预分频数
 //这里使用的是定时器3!
-void TIM3_Int_Init(u16 arr, u16 psc)
+void Init_TIM3(u16 arr, u16 psc)
 {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
@@ -39,8 +41,18 @@ void TIM3_Int_Init(u16 arr, u16 psc)
 	NVIC_Init(&NVIC_InitStructure);  //初始化NVIC寄存器
 
 	TIM_Cmd(TIM3, ENABLE);  //使能TIMx
+	flash_step=0;
 }
 
+inline void LED_ON(void)
+{
+	GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+}
+
+inline void LED_OFF(void)
+{
+	GPIO_SetBits(GPIOC, GPIO_Pin_13);
+}
 //定时器3中断服务程序
 //int ttt=0;
 extern "C" void TIM3_IRQHandler(void) //TIM3中断
@@ -48,12 +60,26 @@ extern "C" void TIM3_IRQHandler(void) //TIM3中断
 	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)  //检查TIM3更新中断发生与否
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);  //清除TIMx更新中断标志
-		if(GPIO_ReadOutputDataBit(GPIOC, GPIO_Pin_13))
-			GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-		else
-		{
-			GPIO_SetBits(GPIOC, GPIO_Pin_13);
+		if(flash_step<led_fast_flash*2)
+		{//快闪
+			if(flash_step&1)
+				LED_OFF();
+			else
+				LED_ON();
 		}
+		else if(flash_step<(led_fast_flash*2+led_slow_flash*4))
+		{
+			if((flash_step-led_fast_flash*2)&2)
+				LED_ON();
+			else
+				LED_OFF();
+		}
+		else
+			LED_OFF();
+		if(flash_step>=(led_fast_flash*2+led_slow_flash*4+6))
+			flash_step=0;
+		else
+			flash_step++;
 	}
 }
 
@@ -79,7 +105,7 @@ extern "C" void TIM4_IRQHandler(void)
 	}
 }
 
-void CLOCK_Init()
+void Init_Clock()
 {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;

@@ -94,7 +94,9 @@ int main(int argc, char* argv[])
 	Init_SPI();
 	Init_Delay();
 	Init_Clock();
-	Init_DEVO();
+	DEVO devo;
+	pDEVO=&devo;
+	devo.Init();
 	SetLED(Working);
 
 	while (1)

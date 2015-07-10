@@ -83,7 +83,7 @@ extern "C" void TIM3_IRQHandler(void) //TIM3中断
 	}
 }
 
-timer_callback_t timer_callback=0;
+timer_callback_t timer_callback;
 
 extern "C" void TIM4_IRQHandler(void)
 {
@@ -92,12 +92,11 @@ extern "C" void TIM4_IRQHandler(void)
 		TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
 		if (timer_callback)
 		{
-			u16 cap = TIM_GetCapture1(TIM4);
 			u16 us = timer_callback();
 			TIM_ClearFlag(TIM4, TIM_FLAG_CC1);
-			if (us)
+			if(us)
 			{
-				TIM_SetCompare1(TIM4, us + cap);
+				TIM_SetCompare1(TIM4, us + TIM_GetCapture1(TIM4));
 				return;
 			}
 		}

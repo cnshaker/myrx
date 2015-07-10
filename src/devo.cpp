@@ -9,23 +9,8 @@
 #include "timx.h"
 #include "segger_rtt.h"
 
-#define PKTS_PER_CHANNEL 4
-#define NUM_WAIT_LOOPS (100 / 5)
-enum PktState {
-    DEVO_BIND=0,
-    DEVO_BIND_SENDCH=1,
-    DEVO_BOUND=2,
-    DEVO_BOUND_1=3,
-    DEVO_BOUND_2=4,
-    DEVO_BOUND_3=5,
-    DEVO_BOUND_4=6,
-    DEVO_BOUND_5=7,
-    DEVO_BOUND_6=8,
-    DEVO_BOUND_7=9,
-    DEVO_BOUND_8=10,
-    DEVO_BOUND_9=11,
-    DEVO_BOUND_10=12,
-};
+DEVO* pDEVO;
+
 static const u8 sopcodes[][8] = {
     /* Note these are in order transmitted (LSB 1st) */
     /* 0 */ {0x3C,0x37,0xCC,0x91,0xE2,0xF8,0xCC,0x91}, //0x91CCF8E291CC373C
@@ -40,318 +25,141 @@ static const u8 sopcodes[][8] = {
     /* 9 */ {0x97,0xE5,0x14,0x72,0x7F,0x1A,0x14,0x72}, //0x72141A7F7214E597
 };
 
-static s16 bind_counter;
-static enum PktState state;
-static u8 txState;
-static u8 packet[16];
-static u32 fixed_id;
-static u8 radio_ch[5];
-static u8 *radio_ch_ptr;
-static u8 pkt_num;
-static u8 cyrfmfg_id[6];
-static u8 num_channels;
-static u8 ch_idx;
-static u8 use_fixed_id;
-static u8 failsafe_pkt;
-
 #define CHAN_MULTIPLIER 100
 #define CHAN_MAX_VALUE (100 * CHAN_MULTIPLIER)
 #define NUM_OUT_CHANNELS 12
 #define BIND_COUNT 0x1388
 
-volatile s16 Channels[NUM_OUT_CHANNELS];
-
-CYRF6936* CYRF;
-char name[24];
-
-
-//加密
-static void scramble_pkt()
+DEVO::DEVO()
+	: CYRF(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1)
 {
-#ifdef NO_SCRAMBLE
-    return;
-#else
-    u8 i;
-    for(i = 0; i < 15; i++) {
-        packet[i + 1] ^= cyrfmfg_id[i % 4];
-    }
-#endif
 }
 
-//填写包后缀
-static void add_pkt_suffix()
-{
-    u8 bind_state;
-    if (use_fixed_id) {
-        if (bind_counter > 0) {
-            bind_state = 0xc0;
-        } else {
-            bind_state = 0x80;
-        }
-    } else {
-        bind_state = 0x00;
-    }
-    packet[10] = bind_state | (PKTS_PER_CHANNEL - pkt_num - 1);
-    packet[11] = *(radio_ch_ptr + 1);
-    packet[12] = *(radio_ch_ptr + 2);
-    packet[13] = fixed_id  & 0xff;
-    packet[14] = (fixed_id >> 8) & 0xff;
-    packet[15] = (fixed_id >> 16) & 0xff;
-}
 
-//失控保护包
-static void build_beacon_pkt(int upper)
-{
-    packet[0] = ((num_channels << 4) | 0x07);
-    u8 enable = 0;
-    int max = 8;
-    //int offset = 0;
-    if (upper) {
-        packet[0] += 1;
-        max = 4;
-        //offset = 8;
-    }
-    for(int i = 0; i < max; i++) {
-        //if (i + offset < Model.num_channels && Model.limits[i+offset].flags & CH_FAILSAFE_EN) {
-        //    enable |= 0x80 >> i;
-        //    packet[i+1] = Model.limits[i+offset].failsafe;
-        //} else {
-            packet[i+1] = 0;
-        //}
-    }
-    packet[9] = enable;
-    add_pkt_suffix();
-}
-
-//绑定包
-static void build_bind_pkt()
-{
-    packet[0] = (num_channels << 4) | 0x0a;
-    packet[1] = bind_counter & 0xff;
-    packet[2] = (bind_counter >> 8);
-    packet[3] = *radio_ch_ptr;
-    packet[4] = *(radio_ch_ptr + 1);
-    packet[5] = *(radio_ch_ptr + 2);
-    packet[6] = cyrfmfg_id[0];
-    packet[7] = cyrfmfg_id[1];
-    packet[8] = cyrfmfg_id[2];
-    packet[9] = cyrfmfg_id[3];
-    add_pkt_suffix();
-    //The fixed-id portion is scrambled in the bind packet
-    //I assume it is ignored
-    packet[13] ^= cyrfmfg_id[0];
-    packet[14] ^= cyrfmfg_id[1];
-    packet[15] ^= cyrfmfg_id[2];
-}
-
-//数据包
-static void build_data_pkt()
-{
-    u8 i;
-    packet[0] = (num_channels << 4) | (0x0b + ch_idx);
-    u8 sign = 0x0b;
-    for (i = 0; i < 4; i++) {
-        s32 value = (s32)Channels[ch_idx * 4 + i] * 0x640 / CHAN_MAX_VALUE;
-        if(value < 0) {
-            value = -value;
-            sign |= 1 << (7 - i);
-        }
-        packet[2 * i + 1] = value & 0xff;
-        packet[2 * i + 2] = (value >> 8) & 0xff;
-    }
-    packet[9] = sign;
-    ch_idx = ch_idx + 1;
-    if (ch_idx * 4 >= num_channels)
-        ch_idx = 0;
-    add_pkt_suffix();
-}
-
-static void cyrf_set_bound_sop_code()
-{
-    /* crc == 0 isn't allowed, so use 1 if the math results in 0 */
-    u8 crc = (cyrfmfg_id[0] + (cyrfmfg_id[1] >> 6) + cyrfmfg_id[2]);
-    if(! crc)
-        crc = 1;
-    u8 sopidx = (0xff &((cyrfmfg_id[0] << 2) + cyrfmfg_id[1] + cyrfmfg_id[2])) % 10;
-    CYRF->ConfigRxTx(1);
-    CYRF->ConfigCRCSeed((crc << 8) + crc);
-    CYRF->ConfigSOPCode(sopcodes[sopidx]);
-    CYRF->WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
-}
-
-//设置频道
-void set_radio_channels()
-{
-	//从4-80信道找出找出3个信号最好的信道，最小间隔4
-	CYRF->FindBestChannels(radio_ch, 3, 4, 4, 80);
-    radio_ch[3] = radio_ch[0];
-    radio_ch[4] = radio_ch[1];
-}
-
-void DEVO_BuildPacket()
-{
-	switch (state)
-	{
-	case DEVO_BIND:
-		//Serial.println("DEVO_BuildPacket: DEVO_BIND");
-		bind_counter--;
-		build_bind_pkt();
-		state = DEVO_BIND_SENDCH;
-		break;
-	case DEVO_BIND_SENDCH:
-		//Serial.println("DEVO_BuildPacket: DEVO_BIND_SENDCH");
-		bind_counter--;
-		build_data_pkt();
-		scramble_pkt();
-		if (bind_counter <= 0)
-		{
-			state = DEVO_BOUND;
-			//PROTOCOL_SetBindState(0);
-			//oled->print_6x8Str(0,2,"Bind End");
-			SEGGER_RTT_printf(0,"Bind End\n");
-		}
-		else
-		{
-			state = DEVO_BIND;
-		}
-		break;
-	case DEVO_BOUND:
-	case DEVO_BOUND_1:
-	case DEVO_BOUND_2:
-	case DEVO_BOUND_3:
-	case DEVO_BOUND_4:
-	case DEVO_BOUND_5:
-	case DEVO_BOUND_6:
-	case DEVO_BOUND_7:
-	case DEVO_BOUND_8:
-	case DEVO_BOUND_9:
-		//Serial.println("DEVO_BuildPacket: DEVO_BOUND");
-		build_data_pkt();
-		scramble_pkt();
-		state=(PktState)(state+1);
-		if (bind_counter > 0)
-		{
-			bind_counter--;
-			if (bind_counter == 0)
-			{
-				//TOTO:PROTOCOL_SetBindState(0);
-				//oled->print_6x8Str(0,3,"Bind End in DEVO_BOUND");
-				SEGGER_RTT_printf(0,"Bind End in DEVO_BOUND\n");
-			}
-		}
-		break;
-	case DEVO_BOUND_10:
-		//Serial.println("DEVO_BuildPacket: DEVO_BOUND_10");
-		build_beacon_pkt(num_channels > 8 ? failsafe_pkt : 0);
-		failsafe_pkt = failsafe_pkt ? 0 : 1;
-		scramble_pkt();
-		state = DEVO_BOUND_1;
-		break;
-	}
-	pkt_num++;
-	if (pkt_num == PKTS_PER_CHANNEL)
-		pkt_num = 0;
-}
-int RFChannel;
-int ChannelRetry;
-void Init_DEVO()
+void DEVO::Init()
 {
 	SEGGER_RTT_printf(0,"---- begin DEVO_Initialize ----\n");
 	CLOCK_StopTimer();
-	CYRF=new CYRF6936(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1);
-	CYRF->CS_HI();
-	CYRF->Reset();
-	CYRF->WriteRegister(TX_LENGTH_ADR,0x2A);
-	u8 r=CYRF->ReadRegister(TX_LENGTH_ADR);
+	//CYRF=new CYRF6936(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1);
+	CYRF.CS_HI();
+	CYRF.Reset();
+	CYRF.WriteRegister(TX_LENGTH_ADR,0x2A);
+	u8 r=CYRF.ReadRegister(TX_LENGTH_ADR);
 	if(r!=0x2A)
 	{
 		SEGGER_RTT_printf(0,"cyrf6936 fail!!\n");
 		SetLED(CYRF_Fail);
 		while(true);
 	}
-	CYRF->Init();
-	CYRF->ConfigCRCSeed(0x0);
-	CYRF->ConfigSOPCode(sopcodes[0]);
-	CYRF->ConfigRxTx(0);
+	CYRF.Init();
+	CYRF.ConfigCRCSeed(0x0);
+	CYRF.ConfigSOPCode(sopcodes[0]);
+	CYRF.ConfigRxTx(0);
 
 	RFChannel=0x4;
 	ChannelRetry=0;
-	CYRF->ConfigRFChannel(RFChannel);
-	CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
-	CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
-	CLOCK_StartTimer(215, DEVO_Callback);
+	CYRF.ConfigRFChannel(RFChannel);
+	CYRF.WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
+	CYRF.WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
+	RFStatus=Binding;
 
+	CLOCK_StartTimer(200, DEVO_Callback);
+}
+
+u16 DEVO::ProcessPacket(u8 pac[])
+{
+	switch (pac[0] & 0xf)
+	{
+	case 0xa: // Bind包
+		//保存transmit channels
+		chns[0] = pac[3];
+		chns[1] = pac[4];
+		chns[2] = pac[5];
+		//当前Channel必须在transmit channels中
+		if (RFChannel == chns[0])
+			chns_idx = 0;
+		else if (RFChannel == chns[1])
+			chns_idx = 1;
+		else if (RFChannel == chns[2])
+			chns_idx = 2;
+		else
+			while (1)
+				;
+		//接下的两个频道也必须符合
+		if (chns[chns_idx+1] != pac[11] || chns[chns_idx+2] != pac[12])
+			while (1)
+				;
+		//发射机id
+		transmitter_id = *((u32*) (&pac[6]));
+		//固定id
+		fixed_id = ((*((u32*) (&pac[13]))) ^ transmitter_id) & 0xffffff;
+
+		channel_packets = pac[10] & 0xf;
+
+		switch (pac[10] & 0xf0)
+		{
+		case 0x80:
+		case 0xc0:
+			use_fixed_id = true;
+			break;
+		case 0x00:
+			use_fixed_id = false;
+			break;
+		default:
+			while (1)
+				;
+		}
+		RFStatus = Bound;
+		break;
+	case 0xb:
+	case 0xc: //数据包
+		scramble_pkt(pac);
+		break;
+	}
+
+	return 0;
 }
 
 u16 DEVO_Callback()
 {
-	u8 RX_IRQ_STATUS=CYRF->ReadRegister(RX_IRQ_STATUS_ADR);
-	if((RX_IRQ_STATUS&(RXC_IRQ|RXE_IRQ))==RXC_IRQ)
+	return pDEVO->Callback();
+}
+
+u16 DEVO::Callback()
+{
+	bool need_reset_rx=false;
+	u8 RX_IRQ_STATUS=CYRF.ReadRegister(RX_IRQ_STATUS_ADR); //读RX_IRQ
+	if((RX_IRQ_STATUS&(RXC_IRQ|RXE_IRQ))==RXC_IRQ) // 一个包被接收
 	{
-		u8 pac[16];
-		CYRF->ReadDataPacket(pac);
+		u8 pac[20];
+		CYRF.ReadDataPacket(pac); //读包
+		need_reset_rx=true;
+		u8 RX_STATUS = CYRF.ReadRegister(RX_STATUS_ADR); //读RX状态
 		SEGGER_RTT_printf(0,"%s\n",pac);
-		u8 RX_STATUS=CYRF->ReadRegister(RX_STATUS_ADR);
-		CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
-		CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
-	}
-	else
-	{
-		ChannelRetry++;
-		if(ChannelRetry>13) // 每个频道尝试13次
+		ProcessPacket(pac); // 处理包
+		if(RFStatus==Bound)//成功Bind
 		{
-			RFChannel++;
-			CYRF->ConfigRFChannel(RFChannel);
-			CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
-			CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
-		}
-		return 200;
-	}
-	return 240;
-	if (txState == 0)
-	{
-		//发送数据包
-		txState = 1;
-		DEVO_BuildPacket();
-		CYRF->WriteDataPacket(packet);
-		return 1200;
-	}
-	txState = 0;
-	int i = 0;
-	//检查发送状态
-	u8 IRQ_STATUS = 0;
-	while (true)
-	{
-		//first read
-		IRQ_STATUS = CYRF->ReadRegister(TX_IRQ_STATUS_ADR);
-		if((IRQ_STATUS&(TXC_IRQ|TXBERR_IRQ|TXE_IRQ))==TXC_IRQ)
-		{
-			//second read
-			IRQ_STATUS = CYRF->ReadRegister(TX_IRQ_STATUS_ADR);
-			if((IRQ_STATUS&TXE_IRQ)==0)
+			if(channel_packets==0)
 			{
-				//Successful Transactions
-				break;
+				chns_idx=chns_idx<2?chns_idx+1:0;
+				CYRF.ConfigRFChannel(chns[chns_idx]);
 			}
+			CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
+			CYRF.WriteRegister(RX_CTRL_ADR, RX_CTRL_RST | RX_GO);
+			return 200;
 		}
-		if(++i > NUM_WAIT_LOOPS)
-			return 1200;//如果发送失败1200us后重新发送
 	}
-	i=CYRF->ReadRegister(TX_LENGTH_ADR);
-	//SEGGER_RTT_printf(0,"Successful Transactions\n");
-	if (state == DEVO_BOUND)//已经绑定成功
+	//没有包到达 或包不是bind包
+	ChannelRetry++;
+	if (ChannelRetry > 13) // 每个频道尝试13次
 	{
-		/* exit binding state */
-		state = DEVO_BOUND_3;
-		cyrf_set_bound_sop_code();
+		ChannelRetry=0;
+		RFChannel=RFChannel>=0x4f?0x4:RFChannel+1;//循环0x4-0x4F频道
+
+		CYRF.ConfigRFChannel(RFChannel);
 	}
-	if (pkt_num == 0)
-	{
-		//Keep tx power updated
-		CYRF->WriteRegister(CYRF_03_TX_CFG, 0x08 | /*Model.tx_power*/7);
-		radio_ch_ptr = ((radio_ch_ptr == &radio_ch[2]) ? radio_ch : radio_ch_ptr + 1);
-		CYRF->ConfigRFChannel(*radio_ch_ptr);
-	}
-	return 1200;
+	CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
+	CYRF.WriteRegister(RX_CTRL_ADR, RX_CTRL_RST | RX_GO);
+	return 200;
 }
 

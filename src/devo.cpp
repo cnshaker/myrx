@@ -252,7 +252,8 @@ void DEVO_BuildPacket()
 	if (pkt_num == PKTS_PER_CHANNEL)
 		pkt_num = 0;
 }
-
+int RFChannel;
+int ChannelRetry;
 void Init_DEVO()
 {
 	SEGGER_RTT_printf(0,"---- begin DEVO_Initialize ----\n");
@@ -269,46 +270,16 @@ void Init_DEVO()
 		while(true);
 	}
 	CYRF->Init();
-	//CYRF->ConfigCRCSeed(0xFDFD);
-	//CYRF->GetMfgData(cyrfmfg_id);
-	//SEGGER_RTT_printf(0,"MFG=%02X %02X %02X %02X %02X %02X\n",
-	//		cyrfmfg_id[0],cyrfmfg_id[1],cyrfmfg_id[2],cyrfmfg_id[3],cyrfmfg_id[4],cyrfmfg_id[5]);
-
-	//CYRF->ConfigRxTx(1);
-	//CYRF->ConfigCRCSeed(0x0000);
-	//CYRF->ConfigSOPCode(sopcodes[0]);
-	//set_radio_channels();
-
-	//SEGGER_RTT_printf(0,"CHN=%d %d %d\n",radio_ch[0],radio_ch[1],radio_ch[2]);
-
-	//use_fixed_id = 0;
-	//failsafe_pkt = 0;
-	//radio_ch_ptr = radio_ch;
-	//CYRF->ConfigRFChannel(*radio_ch_ptr);
-	//num_channels = ((Model.num_channels + 3) >> 2) * 4;
-	//num_channels = (8 + 3)&0xfc; //8ͨ通道
-	//pkt_num = 0;
-	//ch_idx = 0;
-	//txState = 0;
-
-	//伪随机
-	//fixed_id = ((u32) (radio_ch[0] ^ cyrfmfg_id[0] ^ cyrfmfg_id[3]) << 16)
-	//		| ((u32) (radio_ch[1] ^ cyrfmfg_id[1] ^ cyrfmfg_id[4]) << 8)
-	//		| ((u32) (radio_ch[2] ^ cyrfmfg_id[2] ^ cyrfmfg_id[5]) << 0);
-	//取模
-	//fixed_id = fixed_id % 1000000;
-	//bind_counter = BIND_COUNT;
-	//state = DEVO_BIND;
-	//PROTOCOL_SetBindState(0x1388 * 2400 / 1000); //msecs
-
-	CYRF->ConfigRFChannel(0);
-	CYRF->ConfigCRCSeed(0xfdfd);
+	CYRF->ConfigCRCSeed(0x0);
 	CYRF->ConfigSOPCode(sopcodes[0]);
 	CYRF->ConfigRxTx(0);
+
+	RFChannel=0x4;
+	ChannelRetry=0;
+	CYRF->ConfigRFChannel(RFChannel);
 	CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
 	CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
-	CYRF->WriteRegister(RX_IRQ_STATUS_ADR,0);
-	CLOCK_StartTimer(2400, DEVO_Callback);
+	CLOCK_StartTimer(215, DEVO_Callback);
 
 }
 
@@ -317,15 +288,24 @@ u16 DEVO_Callback()
 	u8 RX_IRQ_STATUS=CYRF->ReadRegister(RX_IRQ_STATUS_ADR);
 	if((RX_IRQ_STATUS&(RXC_IRQ|RXE_IRQ))==RXC_IRQ)
 	{
-		//SEGGER_RTT_printf(0,"good recv! IRQ=%02X\n",RX_IRQ_STATUS);
 		u8 pac[16];
 		CYRF->ReadDataPacket(pac);
-		RX_IRQ_STATUS=CYRF->ReadRegister(RX_IRQ_STATUS_ADR);
-		SEGGER_RTT_printf(0,"%s\t0X%02X\n",pac,RX_IRQ_STATUS);
+		SEGGER_RTT_printf(0,"%s\n",pac);
 		u8 RX_STATUS=CYRF->ReadRegister(RX_STATUS_ADR);
 		CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
 		CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
-		//CYRF->WriteRegister(RX_IRQ_STATUS_ADR,0);
+	}
+	else
+	{
+		ChannelRetry++;
+		if(ChannelRetry>13) // 每个频道尝试13次
+		{
+			RFChannel++;
+			CYRF->ConfigRFChannel(RFChannel);
+			CYRF->WriteRegister(RX_ABORT_ADR,RX_ABORT_RST);
+			CYRF->WriteRegister(RX_CTRL_ADR,RX_CTRL_RST|RX_GO);
+		}
+		return 200;
 	}
 	return 240;
 	if (txState == 0)

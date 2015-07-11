@@ -7,7 +7,6 @@ class DEVO
 public:
 	DEVO();
 	void Init(void);
-	u16 ProcessPacket(u8[]);
 	u16 Callback();
 
 private:
@@ -19,11 +18,13 @@ private:
 	CYRF6936 CYRF;
 	u8 RFChannel;
 	u8 ChannelRetry;
+	u16 bind_packets;
 	bool use_fixed_id;
 	enum
 	{
 		Binding, Bound, Lost,
 	} RFStatus;
+	bool ProcessPacket(u8[]);
 	void scramble_pkt(u8*pac)
 	{
 		pac++;

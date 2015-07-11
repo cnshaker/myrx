@@ -25,11 +25,6 @@ static const u8 sopcodes[][8] = {
     /* 9 */ {0x97,0xE5,0x14,0x72,0x7F,0x1A,0x14,0x72}, //0x72141A7F7214E597
 };
 
-#define CHAN_MULTIPLIER 100
-#define CHAN_MAX_VALUE (100 * CHAN_MULTIPLIER)
-#define NUM_OUT_CHANNELS 12
-#define BIND_COUNT 0x1388
-
 DEVO::DEVO()
 	: CYRF(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1)
 {
@@ -66,8 +61,9 @@ void DEVO::Init()
 	CLOCK_StartTimer(200, DEVO_Callback);
 }
 
-u16 DEVO::ProcessPacket(u8 pac[])
+bool DEVO::ProcessPacket(u8 pac[])
 {
+	bool retval=false;
 	switch (pac[0] & 0xf)
 	{
 	case 0xa: // Bind包
@@ -83,37 +79,38 @@ u16 DEVO::ProcessPacket(u8 pac[])
 		else if (RFChannel == chns[2])
 			chns_idx = 2;
 		else
-			while (1)
-				;
+			break;
 		//接下的两个频道也必须符合
 		if (chns[chns_idx+1] != pac[11] || chns[chns_idx+2] != pac[12])
-			while (1)
-				;
+			break;
 		//发射机id
 		transmitter_id = *((u32*) (&pac[6]));
-		//固定id
-		fixed_id = ((*((u32*) (&pac[13]))) ^ transmitter_id) & 0xffffff;
+		//剩余绑定包
+		bind_packets = *((u16*) (&pac[1]));
 
 		channel_packets = pac[10] & 0xf;
 
 		switch (pac[10] & 0xf0)
 		{
-		case 0x80:
 		case 0xc0:
+		case 0x80:
 			use_fixed_id = true;
+			//固定id
+			fixed_id = ((*((u32*) (&pac[13]))) ^ transmitter_id) & 0xffffff;
 			break;
 		case 0x00:
 			use_fixed_id = false;
+			fixed_id = 0;
 			break;
-		default:
-			while (1)
-				;
 		}
 		RFStatus = Bound;
 		SetLED(RF_Bound);
+		retval=true;
 		break;
 	case 0xb:
 	case 0xc: //数据包
+		if(RFStatus != Bound)
+			break;
 		scramble_pkt(pac);
 		fixed_id = ((*((u32*) (&pac[13]))) ^ transmitter_id) & 0xffffff;
 		switch (pac[10] & 0xf0)
@@ -133,10 +130,11 @@ u16 DEVO::ProcessPacket(u8 pac[])
 		if (chns[chns_idx+1] != pac[11] || chns[chns_idx+2] != pac[12])
 					while (1)
 						;
+		retval=true;
 		break;
 	}
 
-	return 0;
+	return retval;
 }
 
 u16 DEVO_Callback()
@@ -155,8 +153,8 @@ u16 DEVO::Callback()
 		need_reset_rx=true;
 		u8 RX_STATUS = CYRF.ReadRegister(RX_STATUS_ADR); //读RX状态
 		SEGGER_RTT_printf(0,"%s\n",pac);
-		ProcessPacket(pac); // 处理包
-		if(RFStatus==Bound)//成功Bind
+		// 处理包
+		if(ProcessPacket(pac))//合适的包
 		{
 			ChannelRetry=0;
 			if(channel_packets==0)

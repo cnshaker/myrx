@@ -28,6 +28,16 @@ static const u8 sopcodes[][8] = {
 DEVO::DEVO()
 	: CYRF(GPIO_Pin(GPIOA,GPIO_Pin_4),GPIO_Pin(GPIOB,GPIO_Pin_0),SPI1)
 {
+	channel_packets=0xff;
+	fixed_id=0;
+	transmitter_id=0;
+	chns[0]=chns[1]=chns[2]=0;
+	chns_idx=0;
+	RFChannel=0;
+	ChannelRetry=0;
+	bind_packets=0;
+	use_fixed_id=false;
+	RFStatus=Uninitialized;
 }
 
 
@@ -61,6 +71,8 @@ void DEVO::Init()
 	CLOCK_StartTimer(200, DEVO_Callback);
 }
 
+//return true when this packet is processed!
+// otherwise this packet has been ignored.
 bool DEVO::ProcessPacket(u8 pac[])
 {
 	bool retval=false;
@@ -120,17 +132,15 @@ bool DEVO::ProcessPacket(u8 pac[])
 			use_fixed_id = true;
 			break;
 		case 0x00:
+		default:
 			use_fixed_id = false;
 			break;
-		default:
-			while (1)
-				;
 		}
 		channel_packets = pac[10] & 0xf;
-		if (chns[chns_idx+1] != pac[11] || chns[chns_idx+2] != pac[12])
-					while (1)
-						;
-		retval=true;
+		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
+			while (1)
+				;
+		retval = true;
 		break;
 	}
 
@@ -149,6 +159,7 @@ u16 DEVO::Callback()
 	if((RX_IRQ_STATUS&(RXC_IRQ|RXE_IRQ))==RXC_IRQ) // 一个包被接收
 	{
 		u8 pac[20];
+		for(int i=0;i<5;i++){*((u32*)(&pac[i<<2]))=0;}
 		CYRF.ReadDataPacket(pac); //读包
 		need_reset_rx=true;
 		u8 RX_STATUS = CYRF.ReadRegister(RX_STATUS_ADR); //读RX状态

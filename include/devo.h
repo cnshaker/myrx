@@ -22,7 +22,7 @@ private:
 	bool use_fixed_id;
 	enum
 	{
-		Binding, Bound, Lost,
+		Uninitialized, Binding, Bound, Lost,
 	} RFStatus;
 	bool ProcessPacket(u8[]);
 	void scramble_pkt(u8*pac)

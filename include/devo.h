@@ -34,6 +34,7 @@ private:
 		p[2]^=transmitter_id;
 		p[3]^=transmitter_id;
 	}
+	s32 Channels[12];
 };
 extern DEVO* pDEVO;
 #endif

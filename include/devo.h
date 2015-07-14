@@ -21,10 +21,10 @@ private:
 	bool use_fixed_id;
 	enum
 	{
-		Uninitialized, Binding, Bound, Lost,
+		Uninitialized, Initialized, Binding, Bound, Lost,
 	} RFStatus;
 	bool ProcessPacket(u8[]);
-	void scramble_pkt(u8*pac)
+	void ScramblePacket(u8*pac)
 	{
 		pac++;
 		u32* p=(u32*)pac;
@@ -34,6 +34,12 @@ private:
 		p[3]^=transmitter_id;
 	}
 	s32 Channels[12];
+	void SetBoundSOPCode(void);
+	void StartReceive(void)
+	{
+		CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
+		CYRF.WriteRegister(RX_CTRL_ADR, RX_CTRL_RST | RX_GO);
+	}
 };
 extern DEVO* pDEVO;
 #endif

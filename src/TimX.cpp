@@ -93,7 +93,6 @@ extern "C" void TIM4_IRQHandler(void)
 		if (timer_callback)
 		{
 			u16 us = timer_callback();
-			TIM_ClearFlag(TIM4, TIM_FLAG_CC1);
 			if(us)
 			{
 				TIM_SetCompare1(TIM4, us + TIM_GetCapture1(TIM4));
@@ -139,11 +138,11 @@ void Init_Clock()
 	TIM_SelectOnePulseMode(TIM4, TIM_OPMode_Repetitive);
 
 	/* Disable outputs. */
-  //timer_disable_oc_output(TIM4, TIM_OC1);
-  //timer_disable_oc_output(TIM4, TIM_OC2);
-  //timer_disable_oc_output(TIM4, TIM_OC3);
-  //timer_disable_oc_output(TIM4, TIM_OC4);
-  TIM4->CCER &= ~(TIM_CCER_CC1E|TIM_CCER_CC2E|TIM_CCER_CC3E|TIM_CCER_CC4E);
+	//timer_disable_oc_output(TIM4, TIM_OC1);
+	//timer_disable_oc_output(TIM4, TIM_OC2);
+	//timer_disable_oc_output(TIM4, TIM_OC3);
+	//timer_disable_oc_output(TIM4, TIM_OC4);
+	TIM4->CCER &= ~(TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E);
 
 	/* Enable CCP1 */
 	//timer_disable_oc_clear(TIM4, TIM_OC1);

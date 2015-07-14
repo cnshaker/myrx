@@ -33,7 +33,6 @@ DEVO::DEVO() :
 	transmitter_id = 0;
 	chns[0] = chns[1] = chns[2] = 0;
 	chns_idx = 0;
-	RFChannel = 0;
 	ChannelRetry = 0;
 	bind_packets = 0;
 	use_fixed_id = false;
@@ -60,9 +59,8 @@ void DEVO::Init()
 	CYRF.ConfigSOPCode(sopcodes[0]);
 	CYRF.ConfigRxTx(0);
 
-	RFChannel = 0x4;
 	ChannelRetry = 0;
-	CYRF.ConfigRFChannel(RFChannel);
+	CYRF.ConfigRFChannel(0x4);
 	CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
 	CYRF.WriteRegister(RX_CTRL_ADR, RX_CTRL_RST | RX_GO);
 	RFStatus = Binding;
@@ -76,12 +74,13 @@ bool DEVO::ProcessPacket(u8 pac[])
 {
 	bool retval = false;
 	int idx = 0;
+	u8 RFChannel=CYRF.GetRFChannel();
 	switch (pac[0] & 0xf)
 	{
 	case 0xa: // Bind包
 		//保存transmit channels
-		chns[0] = pac[3];
-		chns[1] = pac[4];
+		chns[0] = chns[3] = pac[3];
+		chns[1] = chns[4] = pac[4];
 		chns[2] = pac[5];
 		//当前Channel必须在transmit channels中
 		if (RFChannel == chns[0])
@@ -91,10 +90,16 @@ bool DEVO::ProcessPacket(u8 pac[])
 		else if (RFChannel == chns[2])
 			chns_idx = 2;
 		else
+		{
+			SEGGER_RTT_printf(0, "Bind error: RFChannel=%x ch1=%x ch2=%x ch3=%x\n",RFChannel,chns[0],chns[1],chns[2]);
 			break;
+		}
 		//接下的两个频道也必须符合
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
+		{
+			SEGGER_RTT_printf(0, "Bind error: next channel not match\n");
 			break;
+		}
 		//发射机id
 		transmitter_id = *((u32*) (&pac[6]));
 		//剩余绑定包
@@ -115,25 +120,33 @@ bool DEVO::ProcessPacket(u8 pac[])
 			fixed_id = 0;
 			break;
 		}
+		if(RFStatus != Bound)
+		SEGGER_RTT_printf(0, "Bind ok! bind_packets=%d, channel_packets=%d\n",bind_packets,channel_packets);
 		RFStatus = Bound;
 		SetLED(RF_Bound);
 		retval = true;
 		break;
 	case 0xc: //数据包
-		idx = 1;
 	case 0xb:
+		//SEGGER_RTT_printf(0, "try data packet\n");
+		idx = (pac[0] & 0xf) - 0xb;
 		if (RFStatus != Bound)
+		{
 			break;
+		}
 		scramble_pkt(pac); //解密包
 		//解析4个通道
-		Channels[idx << 2 + 0] = (*((u16*) (&pac[1])))
+		Channels[(idx << 2) + 0] = (*((u16*) (&pac[1])))
 				* (pac[9] & 0x80 ? -1 : 1);
-		Channels[idx << 2 + 1] = (*((u16*) (&pac[3])))
+		Channels[(idx << 2) + 1] = (*((u16*) (&pac[3])))
 				* (pac[9] & 0x40 ? -1 : 1);
-		Channels[idx << 2 + 2] = (*((u16*) (&pac[5])))
+		Channels[(idx << 2) + 2] = (*((u16*) (&pac[5])))
 				* (pac[9] & 0x20 ? -1 : 1);
-		Channels[idx << 2 + 3] = (*((u16*) (&pac[7])))
+		Channels[(idx << 2) + 3] = (*((u16*) (&pac[7])))
 				* (pac[9] & 0x10 ? -1 : 1);
+		SEGGER_RTT_printf(0, "Channels: %05d %05d %05d %05d\n", Channels[0],
+				Channels[1], Channels[2], Channels[3], Channels[4], Channels[5],
+				Channels[6], Channels[7]);
 		switch (pac[10] & 0xf0)
 		{
 		case 0xc0:
@@ -149,7 +162,10 @@ bool DEVO::ProcessPacket(u8 pac[])
 		}
 		channel_packets = pac[10] & 0xf;
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
+		{
+			SEGGER_RTT_printf(0, "Error: next channel not match\n");
 			break;
+		}
 		retval = true;
 		break;
 	case 0x7: //fail-safe info for 1st 8 data-channels
@@ -169,7 +185,10 @@ bool DEVO::ProcessPacket(u8 pac[])
 		}
 		channel_packets = pac[10] & 0xf;
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
+		{
+			SEGGER_RTT_printf(0, "Error: next channel not match\n");
 			break;
+		}
 		retval = true;
 		break;
 	}
@@ -184,25 +203,33 @@ u16 DEVO_Callback()
 u16 DEVO::Callback()
 {
 	bool need_reset_rx = false;
+	u8 RFChannel=CYRF.GetRFChannel();
 	u8 RX_IRQ_STATUS = CYRF.ReadRegister(RX_IRQ_STATUS_ADR); //读RX_IRQ
 	if ((RX_IRQ_STATUS & (RXC_IRQ | RXE_IRQ)) == RXC_IRQ) // 一个包被接收
 	{
+		SEGGER_RTT_printf(0, "*");
+		if (RX_IRQ_STATUS & RXOW_IRQ)
+		{
+			CYRF.WriteRegister(RX_IRQ_STATUS_ADR, RXOW_IRQ);
+			SEGGER_RTT_printf(0, "Overwriten!!\n");
+		}
 		u8 pac[20];
 		for (int i = 0; i < 5; i++)
-		{
 			*((u32*) (&pac[i << 2])) = 0;
-		}
 		CYRF.ReadDataPacket(pac); //读包
+		//SEGGER_RTT_printf(0, "pac@%x: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",CYRF.GetRFChannel(),
+		//		pac[0],pac[1],pac[2],pac[3],pac[4],pac[5],pac[6],pac[7],pac[8],pac[9],pac[10],pac[11],pac[12],pac[13],pac[14],pac[15]);
 		need_reset_rx = true;
 		u8 RX_STATUS = CYRF.ReadRegister(RX_STATUS_ADR); //读RX状态
-		SEGGER_RTT_printf(0, "%s\n", pac);
 		// 处理包
 		if (ProcessPacket(pac)) //合适的包
 		{
+			//SEGGER_RTT_printf(0, "good packet\n");
 			ChannelRetry = 0;
 			if (channel_packets == 0)
 			{
-				chns_idx = chns_idx < 2 ? chns_idx + 1 : 0;
+				SEGGER_RTT_printf(0, "channel_packets==0 change channel\n");
+				chns_idx = (chns_idx < 2) ? (chns_idx + 1) : 0;
 				CYRF.ConfigRFChannel(chns[chns_idx]);
 			}
 			CYRF.WriteRegister(RX_ABORT_ADR, RX_ABORT_RST);
@@ -212,25 +239,25 @@ u16 DEVO::Callback()
 	}
 	//没有包到达 或包不是bind包
 	ChannelRetry++;
-	if (ChannelRetry >= 13) // 每个频道尝试13次 约2.6ms
+	if (ChannelRetry > 13) // 每个频道尝试13次 约2.6ms
 	{
-		ChannelRetry = 0;
 		switch (RFStatus)
 		{
 		case Bound:
 			SEGGER_RTT_printf(0, "ERROR: I think i lost the signal\n");
 			RFStatus = Lost; //Tx包应该2.4ms一次
 			SetLED(RF_Lost);
-			while (1)
-				;
+			return 0;
 			break;
 		case Binding:
-			RFChannel = RFChannel >= 0x4f ? 0x4 : RFChannel + 1; //循环0x4-0x4F频道
+			RFChannel = (RFChannel > 0x4f) ? 0x4 : (RFChannel + 1); //循环0x4-0x4F频道
 			CYRF.ConfigRFChannel(RFChannel);
 			need_reset_rx = true;
 			break;
+		default:
+			break;
 		}
-
+		ChannelRetry = 0;
 	}
 	if (need_reset_rx)
 	{

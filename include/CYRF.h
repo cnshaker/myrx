@@ -613,11 +613,13 @@ private:
 	GPIO_Pin cs_pin;
 	GPIO_Pin reset_pin;
 	SPI_TypeDef* spix;
+	u8 rf_channel;
 public:
 	CYRF6936(GPIO_Pin cs,GPIO_Pin reset,SPI_TypeDef* spi)
 		: cs_pin(cs),reset_pin(reset),spix(spi)
 	{
 		CS_HI();
+		rf_channel=0;
 	}
 	virtual ~CYRF6936(){}
 	inline void CS_LO()
@@ -662,6 +664,7 @@ public:
 	void StartReceive();
 	u8 ReadRSSI(unsigned long dodummyread);
 	void ConfigRFChannel(u8 ch);
+	u8 GetRFChannel(void){return rf_channel;}
 	void FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min, u8 max);
 	void ReadDataPacket(u8 dpbuffer[]);
 	void WriteDataPacketLen(const u8 dpbuffer[], u8 len);

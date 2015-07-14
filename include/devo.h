@@ -13,10 +13,9 @@ private:
 	u8 channel_packets;
 	u32 fixed_id;
 	u32 transmitter_id;
-	u8 chns[3];
+	u8 chns[5];
 	u8 chns_idx;
 	CYRF6936 CYRF;
-	u8 RFChannel;
 	u8 ChannelRetry;
 	u16 bind_packets;
 	bool use_fixed_id;

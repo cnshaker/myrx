@@ -179,14 +179,10 @@ u8 CYRF6936::ReadRSSI(unsigned long dodummyread)
 	return (result & 0x0F);
 }
 
-u8 channel;
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
-
-	SEGGER_RTT_printf(0,"Channel=%d\n",ch);
-
-	channel=ch;
-	WriteRegister(CYRF_00_CHANNEL, ch);
+	rf_channel=ch;
+	WriteRegister(CHANNEL_ADR, ch);
 }
 
 //NOTE: This routine will reset the CRC Seed

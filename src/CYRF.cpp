@@ -95,6 +95,7 @@ void CYRF6936::ConfigRxTx(u32 TxRx)
 
 void CYRF6936::ConfigCRCSeed(u16 crc)
 {
+	SEGGER_RTT_printf(0,"CRC Seed: %02X\n",crc);
 	WriteRegister(CRC_SEED_LSB_ADR, crc & 0xff);
 	WriteRegister(CRC_SEED_MSB_ADR, crc >> 8);
 }
@@ -182,6 +183,7 @@ u8 CYRF6936::ReadRSSI(unsigned long dodummyread)
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
 	rf_channel=ch;
+	SEGGER_RTT_printf(0,"\nch=0x%02x",ch);
 	WriteRegister(CHANNEL_ADR, ch);
 }
 

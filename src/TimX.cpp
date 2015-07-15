@@ -87,15 +87,16 @@ timer_callback_t timer_callback;
 
 extern "C" void TIM4_IRQHandler(void)
 {
-	if (TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET)  //检查TIM3更新中断发生与否
+	if (TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET)  //检查TIM4更新中断发生与否
 	{
 		TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
 		if (timer_callback)
 		{
+			u16 cap = TIM_GetCapture1(TIM4);
 			u16 us = timer_callback();
 			if(us)
 			{
-				TIM_SetCompare1(TIM4, us + TIM_GetCapture1(TIM4));
+				TIM_SetCompare1(TIM4, us + cap);
 				return;
 			}
 		}
@@ -114,7 +115,7 @@ void Init_Clock()
 
 	/* Enable TIM4 interrupt. */
 	//中断优先级NVIC设置
-	NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn;  //TIM3中断
+	NVIC_InitStructure.NVIC_IRQChannel = TIM4_IRQn;  //TIM4中断
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;  //先占优先级0级
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 3;  //从优先级3级
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; //IRQ通道被使能

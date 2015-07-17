@@ -664,7 +664,7 @@ public:
 	void StartReceive();
 	u8 ReadRSSI(unsigned long dodummyread);
 	void ConfigRFChannel(u8 ch);
-	u8 GetRFChannel(void){return rf_channel;}
+	inline u8 GetRFChannel(void){return rf_channel;}
 	void FindBestChannels(u8 *channels, u8 len, u8 minspace, u8 min, u8 max);
 	void ReadDataPacket(u8 dpbuffer[]);
 	void WriteDataPacketLen(const u8 dpbuffer[], u8 len);

@@ -183,7 +183,7 @@ u8 CYRF6936::ReadRSSI(unsigned long dodummyread)
 void CYRF6936::ConfigRFChannel(u8 ch)
 {
 	rf_channel=ch;
-	SEGGER_RTT_printf(0,"\nch=0x%02x",ch);
+	SEGGER_RTT_printf(0,"ch=0x%02x\n",ch);
 	WriteRegister(CHANNEL_ADR, ch);
 }
 

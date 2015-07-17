@@ -84,24 +84,38 @@ extern "C" void TIM3_IRQHandler(void) //TIM3中断
 }
 
 timer_callback_t timer_callback;
-
+u16 tick_h;
 extern "C" void TIM4_IRQHandler(void)
 {
+	if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)  //检查TIM4更新中断发生与否
+	{
+		TIM_ClearITPendingBit(TIM4, TIM_IT_Update);  //清除TIMx更新中断标志
+		tick_h++;
+	}
 	if (TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET)  //检查TIM4更新中断发生与否
 	{
 		TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
 		if (timer_callback)
 		{
-			u16 cap = TIM_GetCapture1(TIM4);
+			u16 cap = TIM4->CCR1;//TIM_GetCapture1(TIM4);
+			u16 dt=TIM4->CNT;
 			u16 us = timer_callback();
-			if(us)
+			if (us)
 			{
-				TIM_SetCompare1(TIM4, us + cap);
+				TIM4->CCR1 += us;
+				dt = TIM4->CNT - dt;
+				if(dt>=150)
+					SEGGER_RTT_printf(0, "%d us\n", dt);
 				return;
 			}
 		}
 		CLOCK_StopTimer();
 	}
+}
+
+u32 Get_Ticks(void)
+{
+	return (tick_h<<16)+TIM4->CNT;
 }
 
 void Init_Clock()
@@ -110,6 +124,7 @@ void Init_Clock()
 	NVIC_InitTypeDef NVIC_InitStructure;
 	/* Setup timer for Transmitter */
 	timer_callback = 0;
+	tick_h=0;
 	/* Enable TIM4 clock. */
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE); //时钟使能
 
@@ -163,6 +178,7 @@ void Init_Clock()
 	/* Disable CCP1 interrupt. */
 	//timer_disable_irq(TIM4, TIM_DIER_CC1IE);
 	TIM_ITConfig(TIM4, TIM_IT_CC1, DISABLE);
+	TIM_ITConfig(TIM4, TIM_IT_Update, ENABLE);
 
 	//timer_enable_counter(TIM4);
 	TIM_Cmd(TIM4, ENABLE);

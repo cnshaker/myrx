@@ -87,7 +87,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		chns[1] = chns[4] = pac[4];
 		chns[2] = pac[5];
 		SEGGER_RTT_printf(0,
-					"transmit channel=%x %x %x\n",chns[0],chns[1],chns[2]);
+					"tx chn=%x %x %x\n",chns[0],chns[1],chns[2]);
 
 		//当前Channel必须在transmit channels中
 		if (RFChannel == chns[0])
@@ -138,15 +138,16 @@ bool DEVO::ProcessPacket(u8 pac[])
 		SetLED(RF_Bound);
 		retval = true;
 		break;
-	case 0xc: //数据包
+	case 0xd: //数据包
+	case 0xc:
 	case 0xb:
 		if (RFStatus != Binding && RFStatus != Bound) //因为这个必须用transmitter_id解密
 		{
-			SEGGER_RTT_printf(0,
-					"Data error: RFStatus=%d(%d %d)\n",RFStatus,Binding,Bound);
+			SEGGER_RTT_printf(0, "Data error: RFStatus=%d(%d %d)\n", RFStatus,
+					Binding, Bound);
 			break;
 		}
-		if(bind_packets)
+		if (bind_packets)
 			bind_packets--;
 		idx = (pac[0] & 0xf) - 0xb;
 		ScramblePacket(pac); //解密包
@@ -245,43 +246,49 @@ u16 DEVO::Callback()
 		for (int i = 0; i < 5; i++)
 			*((u32*) (&pac[i << 2])) = 0;
 		CYRF.ReadDataPacket(pac); //读包
-		SEGGER_RTT_printf(0, "*%02X@%02X#%02X!%02X\n", pac[0], RFChannel,
-				RX_IRQ_STATUS, RX_STATUS);
+		//SEGGER_RTT_printf(0, "*%02X@%02X#%02X!%02X\n", pac[0], RFChannel,
+		//		RX_IRQ_STATUS, RX_STATUS);
 		//SEGGER_RTT_printf(0, "pac@%x: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",CYRF.GetRFChannel(),
 		//		pac[0],pac[1],pac[2],pac[3],pac[4],pac[5],pac[6],pac[7],pac[8],pac[9],pac[10],pac[11],pac[12],pac[13],pac[14],pac[15]);
 		need_reset_rx = true;
 		// 处理包
 		if (ProcessPacket(pac)) //合适的包
 		{
+			SEGGER_RTT_printf(0, ".%02x\n",RX_IRQ_STATUS);
 			//SEGGER_RTT_printf(0, "good packet\n");
 			ChannelRetry = 0;
-			SEGGER_RTT_printf(0, "[%d,%d]\n", bind_packets, channel_packets);
+			//SEGGER_RTT_printf(0, "[%d,%d,%d]\n", bind_packets, channel_packets,
+			//		Get_Ticks());
 			if (bind_packets == 0)
 			{
-				SEGGER_RTT_printf(0,
-						"packet: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
-						pac[0], pac[1], pac[2], pac[3], pac[4], pac[5], pac[6],
-						pac[7], pac[8], pac[9], pac[10], pac[11], pac[12],
-						pac[13], pac[14], pac[15]);
+				//SEGGER_RTT_printf(0,
+				//		"packet: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
+				//		pac[0], pac[1], pac[2], pac[3], pac[4], pac[5], pac[6],
+				//		pac[7], pac[8], pac[9], pac[10], pac[11], pac[12],
+				//		pac[13], pac[14], pac[15]);
+				SEGGER_RTT_printf(0, "[%d,%d]\n", bind_packets, channel_packets);
 				SetBoundSOPCode();
 				RFStatus = Bound;
 			}
 			if (channel_packets == 0)
 			{
 				chns_idx = (chns_idx < 2) ? (chns_idx + 1) : 0;
-				SEGGER_RTT_printf(0, "\t\t\t\t\t\tchannel change %02X\n",
-						chns[chns_idx]);
+//				SEGGER_RTT_printf(0, "\t\t\t\t\t\tchannel change %02X\n",
+//						chns[chns_idx]);
 				CYRF.ConfigRFChannel(chns[chns_idx]);
 			}
 			StartReceive();
 			return 200;
 		}
 		else
-			SEGGER_RTT_printf(0, "bad packet\n");
+		{
+			SEGGER_RTT_printf(0, "bad");
+		}
 	}
 	//没有包到达 或包不是bind包
 	ChannelRetry++;
-	SEGGER_RTT_printf(0, ".%02x",RX_IRQ_STATUS);
+	if(RX_IRQ_STATUS)
+		SEGGER_RTT_printf(0, ".%02x\n",RX_IRQ_STATUS);
 	if (ChannelRetry >= 13) // 每个频道尝试13次 约2.6ms
 	{
 		switch (RFStatus)

@@ -97,16 +97,13 @@ extern "C" void TIM4_IRQHandler(void)
 		TIM_ClearITPendingBit(TIM4, TIM_IT_CC1);
 		if (timer_callback)
 		{
-			u16 cap = TIM4->CCR1;//TIM_GetCapture1(TIM4);
-			u16 dt=TIM4->CNT;
-			u16 us = timer_callback();
-			if (us)
+			u16 us;
+			while ((us = timer_callback()) != 0)
 			{
 				TIM4->CCR1 += us;
-				dt = TIM4->CNT - dt;
-				if(dt>=150)
-					SEGGER_RTT_printf(0, "%d us\n", dt);
-				return;
+				if ((TIM4->CCR1 - TIM4->CNT) <= us)
+					break;
+				us = timer_callback();
 			}
 		}
 		CLOCK_StopTimer();

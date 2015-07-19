@@ -41,7 +41,7 @@ DEVO::DEVO() :
 
 void DEVO::Init()
 {
-	SEGGER_RTT_printf(0, "---- begin DEVO_Initialize ----\n");
+	SEGGER_RTT_WriteString(0, "---- begin DEVO_Initialize ----\n");
 	CLOCK_StopTimer();
 	CYRF.CS_HI();
 	CYRF.Reset();
@@ -49,7 +49,7 @@ void DEVO::Init()
 	u8 r = CYRF.ReadRegister(TX_LENGTH_ADR);
 	if (r != 0x55)
 	{
-		SEGGER_RTT_printf(0, "cyrf6936 fail!!\n");
+		SEGGER_RTT_WriteString(0, "cyrf6936 fail!!\n");
 		SetLED(CYRF_Fail);
 		return;
 	}
@@ -78,7 +78,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 	case 0xa: // Bind包: 收到这个包开始bind过程
 		if (RFStatus != Initialized && RFStatus != Binding)
 		{
-			SEGGER_RTT_printf(0,
+			SEGGER_RTT_WriteString(0,
 					"Bind error: RFStatus != Initialized && RFStatus != Binding\n");
 			break;
 		}
@@ -106,7 +106,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		//接下的两个频道也必须符合
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
 		{
-			SEGGER_RTT_printf(0, "Bind error: next channel not match\n");
+			SEGGER_RTT_WriteString(0, "Bind error: next channel not match\n");
 			break;
 		}
 		//发射机id
@@ -179,7 +179,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		channel_packets = pac[10] & 0xf;
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
 		{
-			SEGGER_RTT_printf(0, "Error: next channel not match\n");
+			SEGGER_RTT_WriteString(0, "Error: next channel not match\n");
 			break;
 		}
 		retval = true;
@@ -208,7 +208,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		channel_packets = pac[10] & 0xf;
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
 		{
-			SEGGER_RTT_printf(0, "Error: next channel not match\n");
+			SEGGER_RTT_WriteString(0, "Error: next channel not match\n");
 			break;
 		}
 		retval = true;
@@ -239,7 +239,7 @@ u16 DEVO::Callback()
 		if (RX_IRQ_STATUS & RXOW_IRQ)
 		{
 			CYRF.WriteRegister(RX_IRQ_STATUS_ADR, RXOW_IRQ);
-			SEGGER_RTT_printf(0, "Overwriten!!\n");
+			SEGGER_RTT_WriteString(0, "Overwriten!!\n");
 		}
 		u8 RX_STATUS = CYRF.ReadRegister(RX_STATUS_ADR); //读RX状态
 		u8 pac[20];
@@ -295,7 +295,7 @@ u16 DEVO::Callback()
 		{
 		case Bound:
 		case Binding:
-			SEGGER_RTT_printf(0, "ERROR: I think i lost the signal\n");
+			SEGGER_RTT_WriteString(0, "ERROR: I think i lost the signal\n");
 			RFStatus = Lost; //Tx包应该2.4ms一次
 			SetLED(RF_Lost);
 			return 0;

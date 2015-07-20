@@ -86,8 +86,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		chns[0] = chns[3] = pac[3];
 		chns[1] = chns[4] = pac[4];
 		chns[2] = pac[5];
-		SEGGER_RTT_printf(0,
-					"tx chn=%x %x %x\n",chns[0],chns[1],chns[2]);
+		SEGGER_RTT_printf(0, "tx chn=%x %x %x\n", chns[0], chns[1], chns[2]);
 
 		//当前Channel必须在transmit channels中
 		if (RFChannel == chns[0])
@@ -161,8 +160,8 @@ bool DEVO::ProcessPacket(u8 pac[])
 		Channels[(idx << 2) + 3] = (*((u16*) (&pac[7])))
 				* (pac[9] & 0x10 ? -1 : 1);
 		SEGGER_RTT_printf(0, "Channels: %05d %05d %05d %05d\n", Channels[0],
-		 Channels[1], Channels[2], Channels[3], Channels[4], Channels[5],
-		 Channels[6], Channels[7]);
+				Channels[1], Channels[2], Channels[3], Channels[4], Channels[5],
+				Channels[6], Channels[7]);
 		switch (pac[10] & 0xf0)
 		{
 		case 0xc0:
@@ -259,7 +258,7 @@ u16 DEVO::Callback()
 			ChannelRetry = 0;
 			//SEGGER_RTT_printf(0, "[%d,%d,%d]\n", bind_packets, channel_packets,
 			//		Get_Ticks());
-			if (bind_packets == 0)
+			if (RFStatus==Binding && bind_packets == 0)
 			{
 				//SEGGER_RTT_printf(0,
 				//		"packet: %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",

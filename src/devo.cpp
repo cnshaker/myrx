@@ -37,6 +37,7 @@ DEVO::DEVO() :
 	bind_packets = 0;
 	use_fixed_id = false;
 	RFStatus = Uninitialized;
+	last_packet_tick=0;
 }
 
 void DEVO::Init()
@@ -105,7 +106,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		//接下的两个频道也必须符合
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
 		{
-			SEGGER_RTT_WriteString(0, "Bind error: next channel not match\n");
+			SEGGER_RTT_WriteString(0, "Bind error: next channel not match 1\n");
 			break;
 		}
 		//发射机id
@@ -159,7 +160,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 				* (pac[9] & 0x20 ? -1 : 1);
 		Channels[(idx << 2) + 3] = (*((u16*) (&pac[7])))
 				* (pac[9] & 0x10 ? -1 : 1);
-		SEGGER_RTT_printf(0, "Channels: %05d %05d %05d %05d\n", Channels[0],
+		SEGGER_RTT_printf(0, "Channels: %05d %05d %05d %05d %05d %05d %05d %05d\n", Channels[0],
 				Channels[1], Channels[2], Channels[3], Channels[4], Channels[5],
 				Channels[6], Channels[7]);
 		switch (pac[10] & 0xf0)
@@ -178,7 +179,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		channel_packets = pac[10] & 0xf;
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
 		{
-			SEGGER_RTT_WriteString(0, "Error: next channel not match\n");
+			SEGGER_RTT_WriteString(0, "Error: next channel not match 2\n");
 			break;
 		}
 		retval = true;
@@ -191,6 +192,8 @@ bool DEVO::ProcessPacket(u8 pac[])
 					"fail-safe error: RFStatus != Bound  RFStatus=%d\n",RFStatus);
 			break;
 		}
+		ScramblePacket(pac); //解密包
+		SEGGER_RTT_WriteString(0, "fail-safe info\n");
 		switch (pac[10] & 0xf0)
 		{
 		case 0xc0:
@@ -207,7 +210,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 		channel_packets = pac[10] & 0xf;
 		if (chns[chns_idx + 1] != pac[11] || chns[chns_idx + 2] != pac[12])
 		{
-			SEGGER_RTT_WriteString(0, "Error: next channel not match\n");
+			SEGGER_RTT_WriteString(0, "Error: next channel not match 3\n");
 			break;
 		}
 		retval = true;
@@ -233,7 +236,7 @@ u16 DEVO::Callback()
 	bool need_reset_rx = false;
 	u8 RFChannel = CYRF.GetRFChannel();
 	u8 RX_IRQ_STATUS = CYRF.ReadRegister(RX_IRQ_STATUS_ADR); //读RX_IRQ
-	if (RX_IRQ_STATUS & RXC_IRQ) // 一个包被接收
+	if ((RX_IRQ_STATUS & (RXC_IRQ | RXE_IRQ | RXBERR_IRQ)) == RXC_IRQ) // 一个包被接收
 	{
 		if (RX_IRQ_STATUS & RXOW_IRQ)
 		{
@@ -253,7 +256,8 @@ u16 DEVO::Callback()
 		// 处理包
 		if (ProcessPacket(pac)) //合适的包
 		{
-			SEGGER_RTT_printf(0, ".%02x\n",RX_IRQ_STATUS);
+			SEGGER_RTT_printf(0, ".%02x#%x(%d)\n",RX_IRQ_STATUS,pac[0]&0xf,Get_Ticks()-last_packet_tick);
+			last_packet_tick=Get_Ticks();
 			//SEGGER_RTT_printf(0, "good packet\n");
 			ChannelRetry = 0;
 			//SEGGER_RTT_printf(0, "[%d,%d,%d]\n", bind_packets, channel_packets,

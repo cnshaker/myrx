@@ -101,9 +101,11 @@ extern "C" void TIM4_IRQHandler(void)
 			while ((us = timer_callback()) != 0)
 			{
 				TIM4->CCR1 += us;
-				if ((TIM4->CCR1 - TIM4->CNT) <= us)
-					break;
-				us = timer_callback();
+				u16 dt=TIM4->CCR1 - TIM4->CNT;
+				if (dt <= us)
+					return;
+				else
+					SEGGER_RTT_printf(0,"[%d]\n",dt);
 			}
 		}
 		CLOCK_StopTimer();
@@ -133,11 +135,19 @@ void Init_Clock()
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE; //IRQ通道被使能
 	NVIC_Init(&NVIC_InitStructure);  //初始化NVIC寄存器
 
+	//timer_disable_counter(TIM4);
 	TIM_Cmd(TIM4, DISABLE);
 
-	TIM_DeInit(TIM4);
+	/* Reset TIM4 peripheral. */
+	//timer_reset(TIM4);
+	RCC_APB1PeriphResetCmd(RCC_APB1Periph_TIM4, ENABLE);
+	RCC_APB1PeriphResetCmd(RCC_APB1Periph_TIM4, DISABLE);
 
-	//TIM4
+	/* Timer global mode:
+	 * - No divider
+	 * - Alignment edge
+	 * - Direction up
+	 */
 	TIM_TimeBaseStructure.TIM_Period = 65535; //设置在下一个更新事件装入活动的自动重装载寄存器周期的值
 	TIM_TimeBaseStructure.TIM_Prescaler = 72 - 1; //设置用来作为TIMx时钟频率除数的预分频值
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; //设置时钟分割:TDTS = Tck_tim

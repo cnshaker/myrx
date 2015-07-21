@@ -13,6 +13,7 @@ private:
 	u8 channel_packets;
 	u32 fixed_id;
 	u32 transmitter_id;
+	u32 last_packet_tick;
 	u8 chns[5];
 	u8 chns_idx;
 	CYRF6936 CYRF;

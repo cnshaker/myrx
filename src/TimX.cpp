@@ -89,8 +89,8 @@ extern "C" void TIM4_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)  //检查TIM4更新中断发生与否
 	{
-		TIM_ClearITPendingBit(TIM4, TIM_IT_Update);  //清除TIMx更新中断标志
 		tick_h++;
+		TIM_ClearITPendingBit(TIM4, TIM_IT_Update);  //清除TIMx更新中断标志
 	}
 	if (TIM_GetITStatus(TIM4, TIM_IT_CC1) != RESET)  //检查TIM4更新中断发生与否
 	{
@@ -105,7 +105,7 @@ extern "C" void TIM4_IRQHandler(void)
 				if (dt <= us)
 					return;
 				else
-					SEGGER_RTT_printf(0,"[%d]\n",dt);
+					SEGGER_RTT_printf(0,"[]%d]\n",dt);
 			}
 		}
 		CLOCK_StopTimer();
@@ -114,7 +114,9 @@ extern "C" void TIM4_IRQHandler(void)
 
 u32 Get_Ticks(void)
 {
-	return (tick_h<<16)+TIM4->CNT;
+	while (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)
+		;
+	return (tick_h << 16) + TIM4->CNT;
 }
 
 void Init_Clock()
@@ -149,7 +151,7 @@ void Init_Clock()
 	 * - Direction up
 	 */
 	TIM_TimeBaseStructure.TIM_Period = 65535; //设置在下一个更新事件装入活动的自动重装载寄存器周期的值
-	TIM_TimeBaseStructure.TIM_Prescaler = 72 - 1; //设置用来作为TIMx时钟频率除数的预分频值
+	TIM_TimeBaseStructure.TIM_Prescaler = 71; //设置用来作为TIMx时钟频率除数的预分频值
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1; //设置时钟分割:TDTS = Tck_tim
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  //TIM向上计数模式
 	TIM_TimeBaseInit(TIM4, &TIM_TimeBaseStructure); //根据指定的参数初始化TIMx的时间基数单位

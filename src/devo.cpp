@@ -33,11 +33,13 @@ DEVO::DEVO() :
 	transmitter_id = 0;
 	chns[0] = chns[1] = chns[2] = 0;
 	chns_idx = 0;
-	ChannelRetry = 0;
+
 	bind_packets = 0;
 	use_fixed_id = false;
 	RFStatus = Uninitialized;
 	last_packet_tick=0;
+	wait_tick=0;
+	missed_packet=0;
 }
 
 void DEVO::Init()
@@ -59,11 +61,11 @@ void DEVO::Init()
 	CYRF.ConfigSOPCode(sopcodes[0]);
 	CYRF.ConfigRxTx(0);
 
-	ChannelRetry = 0;
 	CYRF.ConfigRFChannel(0x4);
 	RFStatus = Initialized; //初始化完成 开始等待发射机绑定
 	StartReceive();
-
+	wait_tick=Get_Ticks();
+	missed_packet=0;
 	CLOCK_StartTimer(200, DEVO_Callback);
 }
 
@@ -130,7 +132,7 @@ bool DEVO::ProcessPacket(u8 pac[])
 			fixed_id = 0;
 			break;
 		}
-		if (RFStatus != Binding)
+		//if (RFStatus != Binding)
 			SEGGER_RTT_printf(0,
 					"Binding! bind_packets=%d, channel_packets=%d\n",
 					bind_packets, channel_packets);
@@ -233,7 +235,9 @@ u16 DEVO_Callback()
 
 u16 DEVO::Callback()
 {
+	u32 now_tick=Get_Ticks();
 	bool need_reset_rx = false;
+	u16 retval=0;
 	u8 RFChannel = CYRF.GetRFChannel();
 	u8 RX_IRQ_STATUS = CYRF.ReadRegister(RX_IRQ_STATUS_ADR); //读RX_IRQ
 	if ((RX_IRQ_STATUS & (RXC_IRQ | RXE_IRQ | RXBERR_IRQ)) == RXC_IRQ) // 一个包被接收
@@ -248,6 +252,7 @@ u16 DEVO::Callback()
 		for (int i = 0; i < 5; i++)
 			*((u32*) (&pac[i << 2])) = 0;
 		CYRF.ReadDataPacket(pac); //读包
+		retval=400;
 		//SEGGER_RTT_printf(0, "*%02X@%02X#%02X!%02X\n", pac[0], RFChannel,
 		//		RX_IRQ_STATUS, RX_STATUS);
 		//SEGGER_RTT_printf(0, "pac@%x: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",CYRF.GetRFChannel(),
@@ -256,10 +261,9 @@ u16 DEVO::Callback()
 		// 处理包
 		if (ProcessPacket(pac)) //合适的包
 		{
-			SEGGER_RTT_printf(0, ".%02x#%x(%d)\n",RX_IRQ_STATUS,pac[0]&0xf,Get_Ticks()-last_packet_tick);
-			last_packet_tick=Get_Ticks();
+			SEGGER_RTT_printf(0, ".%02x#%x(%d)\n",RX_IRQ_STATUS,pac[0]&0xf,now_tick-last_packet_tick);
+			wait_tick=last_packet_tick=now_tick;
 			//SEGGER_RTT_printf(0, "good packet\n");
-			ChannelRetry = 0;
 			//SEGGER_RTT_printf(0, "[%d,%d,%d]\n", bind_packets, channel_packets,
 			//		Get_Ticks());
 			if (RFStatus==Binding && bind_packets == 0)
@@ -276,48 +280,66 @@ u16 DEVO::Callback()
 			if (channel_packets == 0)
 			{
 				chns_idx = (chns_idx < 2) ? (chns_idx + 1) : 0;
+				channel_packets = 4;
 //				SEGGER_RTT_printf(0, "\t\t\t\t\t\tchannel change %02X\n",
 //						chns[chns_idx]);
 				CYRF.ConfigRFChannel(chns[chns_idx]);
 			}
 			StartReceive();
-			return 200;
+			return retval;
 		}
 		else
 		{
 			SEGGER_RTT_printf(0, "bad");
 		}
 	}
-	//没有包到达 或包不是bind包
-	ChannelRetry++;
-	if(RX_IRQ_STATUS)
-		SEGGER_RTT_printf(0, ".%02x\n",RX_IRQ_STATUS);
-	if (ChannelRetry >= 13) // 每个频道尝试13次 约2.6ms
+	else if(RX_IRQ_STATUS & RXC_IRQ) // RXC_IRQ被置位 且 RXE_IRQ或RXBERR_IRQ被置位
 	{
-		switch (RFStatus)
+		StartReceive();
+		retval=200;
+	}
+	else
+	{
+		retval=200;
+	}
+	//没有包到达 或包不是bind包
+	if (RX_IRQ_STATUS)
+		SEGGER_RTT_printf(0, ".%02x\n", RX_IRQ_STATUS);
+	if ((RFStatus == Initialized) && ((now_tick-wait_tick) >= 2800)) // 等待超过2.8ms
+	{
+		RFChannel = (RFChannel > 0x4f) ? 0x4 : (RFChannel + 1); //循环0x4-0x4F频道
+		CYRF.ConfigRFChannel(RFChannel);
+		need_reset_rx = true;
+		wait_tick = now_tick;
+	}
+	else if (((RFStatus == Bound) || (RFStatus == Binding)))
+	{
+		if (((now_tick-wait_tick) > channel_packets * 2400))
 		{
-		case Bound:
-		case Binding:
-			SEGGER_RTT_WriteString(0, "ERROR: I think i lost the signal\n");
-			RFStatus = Lost; //Tx包应该2.4ms一次
-			SetLED(RF_Lost);
-			return 0;
-			break;
-		case Initialized:
-			RFChannel = (RFChannel > 0x4f) ? 0x4 : (RFChannel + 1); //循环0x4-0x4F频道
-			CYRF.ConfigRFChannel(RFChannel);
-			need_reset_rx = true;
-			break;
-		default:
-			break;
+			//测算为接受的包数大于等于剩余包
+			missed_packet += channel_packets;
+			if (missed_packet > 100) //错过100个包认为失去信号
+			{
+				SEGGER_RTT_WriteString(0, "ERROR: I think i lost the signal\n");
+				RFStatus = Lost; //Tx包应该2.4ms一次
+				SetLED(RF_Lost);
+				return 0;
+			}
+			else
+			{
+				SEGGER_RTT_printf(0, "here i lost %d packets(tick=%d)\n",channel_packets,now_tick-wait_tick);
+				channel_packets = 4; //每个频道4个包
+				chns_idx = (chns_idx < 2) ? (chns_idx + 1) : 0;
+				CYRF.ConfigRFChannel(chns[chns_idx]);
+				retval=300;
+			}
 		}
-		ChannelRetry = 0;
 	}
 	if (need_reset_rx)
 	{
 		StartReceive();
 	}
-	return 200;
+	return retval;
 
 }
 

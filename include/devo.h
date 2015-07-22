@@ -14,10 +14,11 @@ private:
 	u32 fixed_id;
 	u32 transmitter_id;
 	u32 last_packet_tick;
+	u32 wait_tick;
 	u8 chns[5];
+	u8 missed_packet;
 	u8 chns_idx;
 	CYRF6936 CYRF;
-	u8 ChannelRetry;
 	u16 bind_packets;
 	bool use_fixed_id;
 	enum

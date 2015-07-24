@@ -25,8 +25,8 @@ static const u8 sopcodes[][8] = {
     /* 9 */ {0x97,0xE5,0x14,0x72,0x7F,0x1A,0x14,0x72}, //0x72141A7F7214E597
 };
 
-DEVO::DEVO() :
-		CYRF(GPIO_Pin(GPIOA, GPIO_Pin_4), GPIO_Pin(GPIOB, GPIO_Pin_0), SPI1)
+DEVO::DEVO(Output&o) :
+		CYRF(GPIO_Pin(GPIOA, GPIO_Pin_4), GPIO_Pin(GPIOB, GPIO_Pin_0), SPI1), output(o)
 {
 	channel_packets = 0xff;
 	fixed_id = 0;
@@ -37,9 +37,9 @@ DEVO::DEVO() :
 	bind_packets = 0;
 	use_fixed_id = false;
 	RFStatus = Uninitialized;
-	last_packet_tick=0;
-	wait_tick=0;
-	missed_packet=0;
+	last_packet_tick = 0;
+	wait_tick = 0;
+	missed_packet = 0;
 }
 
 void DEVO::Init()
@@ -152,19 +152,21 @@ bool DEVO::ProcessPacket(u8 pac[])
 		if (bind_packets)
 			bind_packets--;
 		idx = (pac[0] & 0xf) - 0xb;
+		idx <<= 2;
 		ScramblePacket(pac); //解密包
 		//解析4个通道
-		Channels[(idx << 2) + 0] = (*((u16*) (&pac[1])))
-				* (pac[9] & 0x80 ? -1 : 1);
-		Channels[(idx << 2) + 1] = (*((u16*) (&pac[3])))
-				* (pac[9] & 0x40 ? -1 : 1);
-		Channels[(idx << 2) + 2] = (*((u16*) (&pac[5])))
-				* (pac[9] & 0x20 ? -1 : 1);
-		Channels[(idx << 2) + 3] = (*((u16*) (&pac[7])))
-				* (pac[9] & 0x10 ? -1 : 1);
-		SEGGER_RTT_printf(0, "Channels: %05d %05d %05d %05d %05d %05d %05d %05d\n", Channels[0],
-				Channels[1], Channels[2], Channels[3], Channels[4], Channels[5],
-				Channels[6], Channels[7]);
+		Channels[idx + 0] = (*((u16*) (&pac[1]))) * (pac[9] & 0x80 ? -1 : 1);
+		Channels[idx + 1] = (*((u16*) (&pac[3]))) * (pac[9] & 0x40 ? -1 : 1);
+		Channels[idx + 2] = (*((u16*) (&pac[5]))) * (pac[9] & 0x20 ? -1 : 1);
+		Channels[idx + 3] = (*((u16*) (&pac[7]))) * (pac[9] & 0x10 ? -1 : 1);
+		output.SetChannelValue(idx + 0, Channels[idx + 0]);
+		output.SetChannelValue(idx + 1, Channels[idx + 1]);
+		output.SetChannelValue(idx + 2, Channels[idx + 2]);
+		output.SetChannelValue(idx + 3, Channels[idx + 3]);
+		SEGGER_RTT_printf(0,
+				"Channels: %05d %05d %05d %05d %05d %05d %05d %05d\n",
+				Channels[0], Channels[1], Channels[2], Channels[3], Channels[4],
+				Channels[5], Channels[6], Channels[7]);
 		switch (pac[10] & 0xf0)
 		{
 		case 0xc0:

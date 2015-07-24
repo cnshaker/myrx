@@ -182,7 +182,7 @@ void Init_Clock()
 	TIM_OC1Init(TIM4, & TIM_OCInitStructure);
 	TIM_ClearOC1Ref(TIM4, TIM_OCClear_Disable);
 	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Disable);
-	TIM_OC1FastConfig(TIM2, TIM_OCFast_Disable);
+	TIM_OC1FastConfig(TIM4, TIM_OCFast_Disable);
 
 	/* Disable CCP1 interrupt. */
 	//timer_disable_irq(TIM4, TIM_DIER_CC1IE);

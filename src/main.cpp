@@ -5,6 +5,7 @@
 #include "Timx.h"
 #include "cyrf.h"
 #include "devo.h"
+#include "Output.h"
 #include "SEGGER_RTT.h"
 
 void Init_SPI(void)
@@ -69,7 +70,7 @@ void Init_LED(void)
 
 	led_fast_flash=3;
 	led_slow_flash=1;
-	Init_TIM3(1000-1,7200-1);//10Khz的计数频率
+	Init_TIM3(2000-1,7200-1);//10Khz的计数频率
 
 }
 
@@ -91,12 +92,14 @@ int main(int argc, char* argv[])
 	SEGGER_RTT_printf(0,"\n\nstarting...\n");
 
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//设置NVIC中断分组2:2位抢占优先级，2位响应优先级
+	Output output;
+	output.Init();
 	Init_LED();
 	SetLED(Initing);
 	Init_SPI();
 	Init_Delay();
 	Init_Clock();
-	DEVO devo;
+	DEVO devo(output);
 	pDEVO=&devo;
 	devo.Init();
 	SetLED(Working);

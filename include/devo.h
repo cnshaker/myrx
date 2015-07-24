@@ -1,15 +1,17 @@
 #ifndef __DEVO_H__
 #define __DEVO_H__
+#include "Output.h"
 void Init_DEVO();
 u16 DEVO_Callback();
 class DEVO
 {
 public:
-	DEVO();
+	DEVO(Output&);
 	void Init(void);
 	u16 Callback();
 
 private:
+	Output &output;
 	u8 channel_packets;
 	u32 fixed_id;
 	u32 transmitter_id;

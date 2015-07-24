@@ -446,6 +446,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\SEGGER_RTT_printf.c</FilePath>
             </File>
+            <File>
+              <FileName>Output.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>.\src\Output.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -485,6 +490,11 @@
               <FileName>SEGGER_RTT_Conf.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\include\SEGGER_RTT_Conf.h</FilePath>
+            </File>
+            <File>
+              <FileName>Output.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\include\Output.h</FilePath>
             </File>
           </Files>
         </Group>

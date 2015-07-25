@@ -22,8 +22,8 @@ void Output::Init()
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef TIM_OCInitStructure;
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);	//使能定时器3时钟
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA /*| RCC_APB2Periph_AFIO*/, ENABLE); //使能GPIO外设和AFIO复用功能模块时钟
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);	//使能定时器2时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE); //使能GPIO外设和AFIO复用功能模块时钟
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;  //复用推挽输出
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -66,26 +66,33 @@ void Output::Init()
 	TIM_OC4PreloadConfig(TIM2, TIM_OCPreload_Enable);
 
 	TIM_Cmd(TIM2, ENABLE);  //使能TIM3
+	
+	
+	SetChannelValue(0,0);
+	SetChannelValue(1,2000);
+	SetChannelValue(2,1000);
+	SetChannelValue(3,4000);
 }
 
 void Output::SetChannelValue(u8 idx, u16 val)
 {
+	if(val>2000)val=2000;
 	if (idx < MAX_CHANNEL)
 	{
 		Channels[idx] = val;
 		switch (idx)
 		{
 		case 0:
-			TIM_SetCompare1(TIM2, val);
+			TIM_SetCompare1(TIM2, val + 1000);
 			break;
 		case 1:
-			TIM_SetCompare2(TIM2, val);
+			TIM_SetCompare2(TIM2, val + 1000);
 			break;
 		case 2:
-			TIM_SetCompare3(TIM2, val);
+			TIM_SetCompare3(TIM2, val + 1000);
 			break;
 		case 3:
-			TIM_SetCompare4(TIM2, val);
+			TIM_SetCompare4(TIM2, val + 1000);
 			break;
 		default:
 			break;

@@ -114,8 +114,8 @@ extern "C" void TIM4_IRQHandler(void)
 
 u32 Get_Ticks(void)
 {
-	while (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)
-		;
+	//while (TIM_GetITStatus(TIM4, TIM_IT_Update) != RESET)
+	//	;
 	return (tick_h << 16) + TIM4->CNT;
 }
 

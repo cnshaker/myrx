@@ -83,16 +83,16 @@ void Output::SetChannelValue(u8 idx, u16 val)
 		switch (idx)
 		{
 		case 0:
-			TIM_SetCompare1(TIM2, val + 1000);
+			TIM_SetCompare1(TIM2, val + 500);
 			break;
 		case 1:
-			TIM_SetCompare2(TIM2, val + 1000);
+			TIM_SetCompare2(TIM2, val + 500);
 			break;
 		case 2:
-			TIM_SetCompare3(TIM2, val + 1000);
+			TIM_SetCompare3(TIM2, val + 500);
 			break;
 		case 3:
-			TIM_SetCompare4(TIM2, val + 1000);
+			TIM_SetCompare4(TIM2, val + 500);
 			break;
 		default:
 			break;

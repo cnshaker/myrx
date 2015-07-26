@@ -69,6 +69,23 @@ void DEVO::Init()
 	CLOCK_StartTimer(200, DEVO_Callback);
 }
 
+u16 cal_channel_value(u16 raw, u8 sig)
+{
+	u16 chn_val;
+	chn_val = raw;
+	chn_val = chn_val > 1600 ? 1600 : chn_val;
+	if (sig)
+	{
+		chn_val = 1600 - chn_val;
+	}
+	else
+	{
+		chn_val += 1600;
+	}
+	chn_val += (chn_val << 2);
+	chn_val >>= 3;
+	return chn_val;
+}
 //return true when this packet is processed!
 // otherwise this packet has been ignored.
 bool DEVO::ProcessPacket(u8 pac[])
@@ -155,14 +172,19 @@ bool DEVO::ProcessPacket(u8 pac[])
 		idx <<= 2;
 		ScramblePacket(pac); //解密包
 		//解析4个通道
-		Channels[idx + 0] =  ((*((u16*) (&pac[1])))) * (pac[9] & 0x80 ? -1 : 1);
-		Channels[idx + 1] =  ((*((u16*) (&pac[3])))) * (pac[9] & 0x40 ? -1 : 1);
-		Channels[idx + 2] =  ((*((u16*) (&pac[5])))) * (pac[9] & 0x20 ? -1 : 1);
-		Channels[idx + 3] =  ((*((u16*) (&pac[7])))) * (pac[9] & 0x10 ? -1 : 1);
-		//output.SetChannelValue(idx + 0, Channels[idx + 0] * 5 / 8);
-		//output.SetChannelValue(idx + 1, Channels[idx + 1] * 5 / 8);
-		//output.SetChannelValue(idx + 2, Channels[idx + 2] * 5 / 8);
-		//output.SetChannelValue(idx + 3, Channels[idx + 3] * 5 / 8);
+		Channels[idx + 0] = cal_channel_value(*((u16*) (&pac[1])),
+				pac[9] & 0x80);
+		output.SetChannelValue(idx + 0, Channels[idx + 0]);
+		Channels[idx + 1] = cal_channel_value(*((u16*) (&pac[3])),
+				pac[9] & 0x40);
+		output.SetChannelValue(idx + 1, Channels[idx + 1]);
+		Channels[idx + 2] = cal_channel_value(*((u16*) (&pac[5])),
+				pac[9] & 0x20);
+		output.SetChannelValue(idx + 2, Channels[idx + 2]);
+		Channels[idx + 3] = cal_channel_value(*((u16*) (&pac[7])),
+				pac[9] & 0x10);
+		output.SetChannelValue(idx + 3, Channels[idx + 3]);
+
 		SEGGER_RTT_printf(0,
 				"Channels: %05d %05d %05d %05d %05d %05d %05d %05d\n",
 				Channels[0], Channels[1], Channels[2], Channels[3], Channels[4],
